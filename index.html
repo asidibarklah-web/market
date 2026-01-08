@@ -5,15 +5,15 @@
 <title>Oubrou Market</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
-.card:hover {
-  transform: translateY(-6px) scale(1.02);
+.product {
+  transition: all 0.3s ease;
+}
+.product:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
 }
 </style>
 </head>
@@ -24,45 +24,61 @@
 <header class="bg-white shadow p-4 flex justify-between items-center">
   <h1 class="text-xl font-bold">🛒 Oubrou Market</h1>
   <div class="flex gap-2">
-    <button onclick="openCart()" class="bg-indigo-600 text-white px-4 py-2 rounded">Cart (<span id="cartCount">0</span>)</button>
-    <button onclick="openAdminLogin()" class="border px-4 py-2 rounded">Admin</button>
+    <button onclick="openCart()" class="bg-indigo-600 text-white px-4 py-2 rounded">
+      Cart (<span id="cartCount">0</span>)
+    </button>
+    <button onclick="openAdminLogin()" class="border px-4 py-2 rounded">
+      Admin
+    </button>
   </div>
 </header>
 
 <!-- SHOP -->
-<section class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="products"></section>
+<section id="shop" class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
 
 <!-- CART -->
-<div id="cartBox" class="fixed top-0 right-0 w-80 h-full bg-white shadow-lg p-4 hidden">
-  <h2 class="text-lg font-bold mb-4">Cart</h2>
+<div id="cartBox" class="fixed top-0 right-0 w-80 h-full bg-white shadow-xl p-4 hidden">
+  <h2 class="text-lg font-bold mb-4">Your Cart</h2>
   <div id="cartItems"></div>
-  <p class="font-bold mt-4">Total: <span id="total">0</span> DH</p>
-  <button onclick="closeCart()" class="mt-4 w-full bg-red-500 text-white py-2 rounded">Close</button>
+  <p class="font-bold mt-4">Total: <span id="cartTotal">0</span> DH</p>
+  <button onclick="closeCart()" class="mt-4 w-full bg-red-500 text-white py-2 rounded">
+    Close
+  </button>
 </div>
 
 <!-- ADMIN LOGIN -->
-<div id="adminLogin" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center">
+<div id="adminLogin" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
   <div class="bg-white p-6 rounded w-80">
     <h2 class="font-bold mb-3">Admin Login</h2>
+
     <div class="relative">
-      <input id="adminPass" type="password" class="border w-full p-2 rounded" placeholder="Password">
-      <button onclick="toggleEye()" class="absolute right-2 top-2">👁</button>
+      <input id="adminPassword" type="password"
+        class="border w-full p-2 rounded" placeholder="Password">
+      <button onclick="togglePassword()" class="absolute right-2 top-2">👁</button>
     </div>
-    <button onclick="checkAdmin()" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded">Enter</button>
+
+    <button onclick="loginAdmin()"
+      class="mt-4 w-full bg-indigo-600 text-white py-2 rounded">
+      Login
+    </button>
   </div>
 </div>
 
 <!-- ADMIN PANEL -->
-<div id="adminPanel" class="fixed inset-0 bg-white hidden overflow-auto p-6">
-  <button onclick="closeAdmin()" class="mb-4 text-red-500">← Exit</button>
+<div id="adminPanel" class="fixed inset-0 bg-white hidden p-6 overflow-auto">
+  <button onclick="closeAdmin()" class="text-red-500 mb-4">← Exit</button>
 
   <h2 class="text-xl font-bold mb-4">Admin Panel</h2>
 
-  <div class="grid gap-2 max-w-md">
-    <input id="name" class="border p-2 rounded" placeholder="Product name">
-    <input id="price" type="number" class="border p-2 rounded" placeholder="Price">
-    <input id="image" class="border p-2 rounded" placeholder="Image URL">
-    <button onclick="addProduct()" class="bg-green-600 text-white py-2 rounded">Add Product</button>
+  <div class="max-w-md space-y-2">
+    <input id="pName" class="border p-2 w-full rounded" placeholder="Product name">
+    <input id="pPrice" type="number" class="border p-2 w-full rounded" placeholder="Price">
+    <input id="pImage" class="border p-2 w-full rounded" placeholder="Image URL">
+
+    <button onclick="addProduct()"
+      class="bg-green-600 text-white py-2 w-full rounded">
+      Add Product
+    </button>
   </div>
 
   <h3 class="mt-6 font-bold">Products</h3>
@@ -70,95 +86,115 @@
 </div>
 
 <script>
-/* ================= SUPABASE ================= */
-const supabase = window.supabase.createClient(
-  "https://qzozwhxbzmldevbwdpep.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6b3p3aHhiem1sZGV2YndkcGVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4OTM5MzgsImV4cCI6MjA4MzQ2OTkzOH0.3ze6Wi1soRWTjLMiZBdG9gNUtX0_LORzlwmJctntJyQ"
-);
+/* ================= DATA ================= */
+let products = JSON.parse(localStorage.getItem("products")) || [
+  { name: "Milk", price: 2, image: "https://via.placeholder.com/300" }
+];
 
-/* ================= SHOP ================= */
 let cart = [];
 
-async function loadProducts() {
-  const { data } = await supabase.from("products").select("*");
-  products.innerHTML = "";
-  adminList.innerHTML = "";
+/* ================= RENDER ================= */
+function saveProducts() {
+  localStorage.setItem("products", JSON.stringify(products));
+}
 
-  data.forEach(p => {
-    products.innerHTML += `
-      <div class="bg-white p-4 rounded shadow transition card">
+function renderShop() {
+  shop.innerHTML = "";
+  products.forEach((p, i) => {
+    shop.innerHTML += `
+      <div class="product bg-white p-4 rounded">
         <img src="${p.image}" class="h-40 w-full object-cover rounded">
         <h3 class="font-bold mt-2">${p.name}</h3>
         <p>${p.price} DH</p>
-        <button onclick='addToCart(${JSON.stringify(p)})'
+        <button onclick="addToCart(${i})"
           class="mt-2 w-full bg-indigo-600 text-white py-2 rounded">
           Add to cart
         </button>
       </div>
     `;
+  });
+}
 
+function renderAdmin() {
+  adminList.innerHTML = "";
+  products.forEach((p, i) => {
     adminList.innerHTML += `
       <div class="flex justify-between border-b py-2">
         <span>${p.name}</span>
-        <button onclick="deleteProduct(${p.id})" class="text-red-500">Delete</button>
+        <button onclick="deleteProduct(${i})" class="text-red-500">
+          Delete
+        </button>
       </div>
     `;
   });
 }
 
-loadProducts();
-
 /* ================= CART ================= */
-function addToCart(p) {
-  cart.push(p);
+function addToCart(i) {
+  cart.push(products[i]);
   cartCount.innerText = cart.length;
   renderCart();
 }
 
 function renderCart() {
   cartItems.innerHTML = "";
-  let sum = 0;
+  let total = 0;
   cart.forEach(p => {
-    sum += p.price;
+    total += p.price;
     cartItems.innerHTML += `<p>${p.name} - ${p.price} DH</p>`;
   });
-  total.innerText = sum;
+  cartTotal.innerText = total;
 }
 
 function openCart() { cartBox.classList.remove("hidden"); }
 function closeCart() { cartBox.classList.add("hidden"); }
 
 /* ================= ADMIN ================= */
-function openAdminLogin() { adminLogin.classList.remove("hidden"); }
-function closeAdmin() { adminPanel.classList.add("hidden"); }
-
-function toggleEye() {
-  adminPass.type = adminPass.type === "password" ? "text" : "password";
+function openAdminLogin() {
+  adminLogin.classList.remove("hidden");
 }
 
-function checkAdmin() {
-  if (adminPass.value === "Oubrou12345") {
+function togglePassword() {
+  adminPassword.type =
+    adminPassword.type === "password" ? "text" : "password";
+}
+
+function loginAdmin() {
+  if (adminPassword.value === "Oubrou12345") {
     adminLogin.classList.add("hidden");
     adminPanel.classList.remove("hidden");
+    renderAdmin();
   } else {
     alert("Wrong password");
   }
 }
 
-async function addProduct() {
-  await supabase.from("products").insert([{
-    name: name.value,
-    price: price.value,
-    image: image.value
-  }]);
-  name.value = price.value = image.value = "";
-  loadProducts();
+function closeAdmin() {
+  adminPanel.classList.add("hidden");
 }
 
-async function deleteProduct(id) {
-  await supabase.from("products").delete().eq("id", id);
-  loadProducts();
+/* ================= ADMIN ACTIONS ================= */
+function addProduct() {
+  products.push({
+    name: pName.value,
+    price: Number(pPrice.value),
+    image: pImage.value || "https://via.placeholder.com/300"
+  });
+  pName.value = pPrice.value = pImage.value = "";
+  saveProducts();
+  renderShop();
+  renderAdmin();
 }
+
+function deleteProduct(i) {
+  products.splice(i, 1);
+  saveProducts();
+  renderShop();
+  renderAdmin();
+}
+
+/* INIT */
+renderShop();
 </script>
 
 </body>
