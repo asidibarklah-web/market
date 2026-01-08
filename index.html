@@ -1,45 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Oubrou Market Test</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
+<meta charset="UTF-8">
+<title>Oubrou Market</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<h1>Oubrou Market</h1>
-<button onclick="addProduct()">Add Test Product</button>
-<ul id="list"></ul>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+.card:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+</style>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- HEADER -->
+<header class="bg-white shadow p-4 flex justify-between items-center">
+  <h1 class="text-xl font-bold">🛒 Oubrou Market</h1>
+  <div class="flex gap-2">
+    <button onclick="openCart()" class="bg-indigo-600 text-white px-4 py-2 rounded">Cart (<span id="cartCount">0</span>)</button>
+    <button onclick="openAdminLogin()" class="border px-4 py-2 rounded">Admin</button>
+  </div>
+</header>
+
+<!-- SHOP -->
+<section class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="products"></section>
+
+<!-- CART -->
+<div id="cartBox" class="fixed top-0 right-0 w-80 h-full bg-white shadow-lg p-4 hidden">
+  <h2 class="text-lg font-bold mb-4">Cart</h2>
+  <div id="cartItems"></div>
+  <p class="font-bold mt-4">Total: <span id="total">0</span> DH</p>
+  <button onclick="closeCart()" class="mt-4 w-full bg-red-500 text-white py-2 rounded">Close</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center">
+  <div class="bg-white p-6 rounded w-80">
+    <h2 class="font-bold mb-3">Admin Login</h2>
+    <div class="relative">
+      <input id="adminPass" type="password" class="border w-full p-2 rounded" placeholder="Password">
+      <button onclick="toggleEye()" class="absolute right-2 top-2">👁</button>
+    </div>
+    <button onclick="checkAdmin()" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded">Enter</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="fixed inset-0 bg-white hidden overflow-auto p-6">
+  <button onclick="closeAdmin()" class="mb-4 text-red-500">← Exit</button>
+
+  <h2 class="text-xl font-bold mb-4">Admin Panel</h2>
+
+  <div class="grid gap-2 max-w-md">
+    <input id="name" class="border p-2 rounded" placeholder="Product name">
+    <input id="price" type="number" class="border p-2 rounded" placeholder="Price">
+    <input id="image" class="border p-2 rounded" placeholder="Image URL">
+    <button onclick="addProduct()" class="bg-green-600 text-white py-2 rounded">Add Product</button>
+  </div>
+
+  <h3 class="mt-6 font-bold">Products</h3>
+  <div id="adminList" class="mt-2"></div>
+</div>
 
 <script>
+/* ================= SUPABASE ================= */
 const supabase = window.supabase.createClient(
   "https://qzozwhxbzmldevbwdpep.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6b3p3aHhiem1sZGV2YndkcGVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4OTM5MzgsImV4cCI6MjA4MzQ2OTkzOH0.3ze6Wi1soRWTjLMiZBdG9gNUtX0_LORzlwmJctntJyQ"
 );
 
-async function load() {
-  const { data, error } = await supabase.from("products").select("*");
-  if (error) {
-    alert("ERROR: " + error.message);
-    return;
-  }
-  list.innerHTML = "";
+/* ================= SHOP ================= */
+let cart = [];
+
+async function loadProducts() {
+  const { data } = await supabase.from("products").select("*");
+  products.innerHTML = "";
+  adminList.innerHTML = "";
+
   data.forEach(p => {
-    list.innerHTML += `<li>${p.name} - ${p.price}</li>`;
+    products.innerHTML += `
+      <div class="bg-white p-4 rounded shadow transition card">
+        <img src="${p.image}" class="h-40 w-full object-cover rounded">
+        <h3 class="font-bold mt-2">${p.name}</h3>
+        <p>${p.price} DH</p>
+        <button onclick='addToCart(${JSON.stringify(p)})'
+          class="mt-2 w-full bg-indigo-600 text-white py-2 rounded">
+          Add to cart
+        </button>
+      </div>
+    `;
+
+    adminList.innerHTML += `
+      <div class="flex justify-between border-b py-2">
+        <span>${p.name}</span>
+        <button onclick="deleteProduct(${p.id})" class="text-red-500">Delete</button>
+      </div>
+    `;
   });
 }
 
-async function addProduct() {
-  const { error } = await supabase.from("products").insert([
-    { name: "Apple", price: 2, image: "" }
-  ]);
-  if (error) {
-    alert("SAVE ERROR: " + error.message);
-    return;
-  }
-  load();
+loadProducts();
+
+/* ================= CART ================= */
+function addToCart(p) {
+  cart.push(p);
+  cartCount.innerText = cart.length;
+  renderCart();
 }
 
-load();
+function renderCart() {
+  cartItems.innerHTML = "";
+  let sum = 0;
+  cart.forEach(p => {
+    sum += p.price;
+    cartItems.innerHTML += `<p>${p.name} - ${p.price} DH</p>`;
+  });
+  total.innerText = sum;
+}
+
+function openCart() { cartBox.classList.remove("hidden"); }
+function closeCart() { cartBox.classList.add("hidden"); }
+
+/* ================= ADMIN ================= */
+function openAdminLogin() { adminLogin.classList.remove("hidden"); }
+function closeAdmin() { adminPanel.classList.add("hidden"); }
+
+function toggleEye() {
+  adminPass.type = adminPass.type === "password" ? "text" : "password";
+}
+
+function checkAdmin() {
+  if (adminPass.value === "Oubrou12345") {
+    adminLogin.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+  } else {
+    alert("Wrong password");
+  }
+}
+
+async function addProduct() {
+  await supabase.from("products").insert([{
+    name: name.value,
+    price: price.value,
+    image: image.value
+  }]);
+  name.value = price.value = image.value = "";
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  await supabase.from("products").delete().eq("id", id);
+  loadProducts();
+}
 </script>
 
 </body>
