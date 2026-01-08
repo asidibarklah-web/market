@@ -16,6 +16,10 @@
     .product-card:hover {
       box-shadow: 0 20px 40px rgba(0,0,0,0.2);
     }
+    /* LOGIN MODAL */
+    #loginModal {
+      display: none;
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
@@ -102,10 +106,20 @@
   </div>
 </section>
 
+<!-- ADMIN LOGIN MODAL -->
+<div id="loginModal" class="fixed inset-0 bg-black/50 hidden justify-center items-center z-50">
+  <div class="bg-white p-8 rounded-2xl shadow-lg w-96">
+    <h3 class="text-xl font-bold mb-4">Admin Login</h3>
+    <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full mb-3">
+    <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
+    <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Login</button>
+  </div>
+</div>
+
 <script>
 // ----------------- PASSWORD -----------------
-const ADMIN_PASSWORD = "Oubrou12345"; // set your admin password here
-let adminUnlocked = false; // tracks if password was entered
+let ADMIN_PASSWORD = "Oubrou12345"; 
+let adminUnlocked = false;
 
 // ----------------- LOCAL STORAGE -----------------
 let products = JSON.parse(localStorage.getItem('products')) || [];
@@ -239,17 +253,21 @@ function confirmOrder(){
   showShop();
 }
 
-// ----------------- ADMIN PASSWORD -----------------
-function showAdmin(){
-  if(!adminUnlocked){
-    const pass = prompt("Enter admin password:");
-    if(pass === ADMIN_PASSWORD){
-      adminUnlocked = true;
-    } else {
-      alert("❌ Wrong password!");
-      return;
-    }
+// ----------------- LOGIN MODAL -----------------
+function loginAdmin() {
+  const input = document.getElementById('adminPasswordInput').value;
+  if (input === ADMIN_PASSWORD) {
+    adminUnlocked = true;
+    document.getElementById('loginModal').classList.add('hidden');
+    document.getElementById('adminPasswordInput').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+    openAdminPage();
+  } else {
+    document.getElementById('loginError').classList.remove('hidden');
   }
+}
+
+function openAdminPage() {
   shopPage.classList.add('hidden');
   checkoutPage.classList.add('hidden');
   adminPage.classList.remove('hidden');
