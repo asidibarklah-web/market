@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Oubrou Market</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -20,7 +20,7 @@
     <div class="flex items-center gap-4">
       <div class="bg-primary text-white p-3 rounded-xl shadow">🏪</div>
       <div>
-        <h1 class="font-bold text-xl">Digital Market</h1>
+        <h1 class="font-bold text-xl">Oubrou Market</h1>
         <p class="text-sm text-gray-500">Professional Market System</p>
       </div>
     </div>
@@ -44,7 +44,12 @@
 <section id="loginPage" class="max-w-2xl mx-auto px-6 py-12 hidden">
   <div class="bg-white rounded-2xl shadow p-8 flex flex-col items-center">
     <h3 class="text-2xl font-bold mb-4">Admin Login</h3>
-    <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full mb-3">
+    <div class="relative w-full mb-3">
+      <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full pr-10">
+      <button id="togglePassword" type="button" class="absolute right-2 top-2 text-gray-500 hover:text-gray-800">
+        👁
+      </button>
+    </div>
     <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
     <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Enter</button>
   </div>
@@ -179,7 +184,7 @@ function closeCart(){cartPanel.classList.add('translate-x-full');}
 function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden');}
 function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; localStorage.setItem('cart',JSON.stringify(cart)); renderProducts(); renderAdmin(); cartCount.innerText=0; showShop();}
 
-// ----------------- LOGIN -----------------
+// LOGIN
 function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
 function loginAdmin(){ const input=document.getElementById('adminPasswordInput').value;
   if(input===ADMIN_PASSWORD){ adminUnlocked=true; loginPage.classList.add('hidden'); document.getElementById('adminPasswordInput').value=''; document.getElementById('loginError').classList.add('hidden'); openAdminPage(); } 
@@ -191,9 +196,17 @@ function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.ad
 // Floating product effect
 function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`}); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
 
+// Toggle password
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('adminPasswordInput');
+togglePassword.addEventListener('click', () => {
+  if(passwordInput.type === "password"){ passwordInput.type="text"; togglePassword.textContent="🙈"; }
+  else{ passwordInput.type="password"; togglePassword.textContent="👁"; }
+});
+
 // Initial render
 renderProducts(); renderAdmin(); initFloatingEffect(); cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-</script>
 
+</script>
 </body>
 </html>
