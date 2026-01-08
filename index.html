@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oubrou Market</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -15,6 +15,7 @@
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
+<!-- HEADER -->
 <header class="bg-white border-b sticky top-0 z-40">
   <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-4">
@@ -40,15 +41,13 @@
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
 
-<!-- LOGIN -->
+<!-- LOGIN PAGE -->
 <section id="loginPage" class="max-w-2xl mx-auto px-6 py-12 hidden">
   <div class="bg-white rounded-2xl shadow p-8 flex flex-col items-center">
     <h3 class="text-2xl font-bold mb-4">Admin Login</h3>
     <div class="relative w-full mb-3">
       <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full pr-10">
-      <button id="togglePassword" type="button" class="absolute right-2 top-2 text-gray-500 hover:text-gray-800">
-        👁
-      </button>
+      <button id="togglePassword" type="button" class="absolute right-2 top-2 text-gray-500 hover:text-gray-800">👁</button>
     </div>
     <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
     <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Enter</button>
@@ -109,40 +108,70 @@
   </div>
 </section>
 
-<script>
-const ADMIN_PASSWORD = "Oubrou12345";
-let adminUnlocked = false;
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-analytics.js";
 
-// Local storage for products/cart
-let products = JSON.parse(localStorage.getItem('products')) || [];
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  const firebaseConfig = {
+    apiKey: "AIzaSyABCrx6YzrWtLbHPpQL97GkGu2SCU5MdPw",
+    authDomain: "oubrou-market.firebaseapp.com",
+    projectId: "oubrou-market",
+    storageBucket: "oubrou-market.firebasestorage.app",
+    messagingSenderId: "593090931508",
+    appId: "1:593090931508:web:3708017c3849be95109361",
+    measurementId: "G-W8QJ3TYXWK"
+  };
 
-// Render products in shop
-function renderProducts() {
-  productList.innerHTML='';
-  products.forEach((p,i)=>{
-    const stockPercent = Math.min(100, (p.stock/p.capacity)*100);
-    productList.innerHTML+=`
-      <div class='product-card bg-white rounded-2xl shadow p-6 flex flex-col items-center'>
-        <img src='${p.image}' class='h-40 w-40 object-cover rounded-lg mb-3'>
-        <h4 class='font-semibold mt-2'>${p.name}</h4>
-        <p class='text-gray-600 mb-1'>${p.price} DH</p>
-        <div class="w-full bg-gray-200 rounded-full h-3 mb-1">
-          <div class="bg-primary h-3 rounded-full transition-all" style="width:${stockPercent}%"></div>
-        </div>
-        <p class="text-sm text-gray-500 mb-2">Stock: ${p.stock} / ${p.capacity}</p>
-        <button onclick='addToCart(${i})' class='mt-2 w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition'>Add to cart</button>
-      </div>`;
-  })
-}
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+  const productsCollection = collection(db, "products");
 
-// Render admin list
-function renderAdmin(){
-  if(!adminUnlocked) return;
-  const list = document.getElementById('adminProductsList');
-  list.innerHTML='';
-  products.forEach((p,i)=>{
-    list.innerHTML += `
+  let products = [];
+  let cart = [];
+
+  const ADMIN_PASSWORD = "Oubrou12345";
+  let adminUnlocked = false;
+
+  // ===================== FUNCTIONS =====================
+
+  // Load products from Firebase
+  async function loadProducts() {
+    products = [];
+    const snapshot = await getDocs(productsCollection);
+    snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+    renderProducts();
+    renderAdmin();
+    updateCartCount();
+    initFloatingEffect();
+  }
+
+  function renderProducts() {
+    productList.innerHTML = '';
+    products.forEach((p, i) => {
+      const stockPercent = Math.min(100, (p.stock/p.capacity)*100);
+      productList.innerHTML += `
+        <div class='product-card bg-white rounded-2xl shadow p-6 flex flex-col items-center'>
+          <img src='${p.image}' class='h-40 w-40 object-cover rounded-lg mb-3'>
+          <h4 class='font-semibold mt-2'>${p.name}</h4>
+          <p class='text-gray-600 mb-1'>${p.price} DH</p>
+          <div class="w-full bg-gray-200 rounded-full h-3 mb-1">
+            <div class="bg-primary h-3 rounded-full transition-all" style="width:${stockPercent}%"></div>
+          </div>
+          <p class="text-sm text-gray-500 mb-2">Stock: ${p.stock} / ${p.capacity}</p>
+          <button onclick='addToCart(${i})' class='mt-2 w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition'>Add to cart</button>
+        </div>`;
+    });
+  }
+
+  function renderAdmin() {
+    if(!adminUnlocked) return;
+    const list = document.getElementById('adminProductsList');
+    list.innerHTML = '';
+    products.forEach((p, i) => {
+      list.innerHTML += `
       <div class="flex items-center gap-4 p-4 rounded-xl shadow hover:shadow-lg transition bg-gray-50">
         <img src="${p.image}" class="w-24 h-24 object-cover rounded-lg">
         <div class="flex-1">
@@ -157,56 +186,115 @@ function renderAdmin(){
           <button onclick='deleteProduct(${i})' class="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition">Delete</button>
         </div>
       </div>`;
+    });
+  }
+
+  async function saveProduct() {
+    const i = editIndex.value;
+    const data = {
+      name: pName.value,
+      price: +pPrice.value,
+      stock: +pStock.value,
+      capacity: +pCapacity.value,
+      production: pProduction.value,
+      expiration: pExpiration.value,
+      image: pImage.value
+    };
+
+    if(i === '') {
+      const docRef = await addDoc(productsCollection, data);
+      products.push({ id: docRef.id, ...data });
+    } else {
+      const docRef = doc(db, "products", products[i].id);
+      await updateDoc(docRef, data);
+      products[i] = { id: products[i].id, ...data };
+    }
+
+    editIndex.value = '';
+    pName.value = pPrice.value = pStock.value = pCapacity.value = pProduction.value = pExpiration.value = pImage.value = '';
+    renderProducts(); renderAdmin();
+  }
+
+  function editProduct(i) {
+    const p = products[i];
+    pName.value = p.name; pPrice.value = p.price; pStock.value = p.stock; pCapacity.value = p.capacity;
+    pProduction.value = p.production; pExpiration.value = p.expiration; pImage.value = p.image;
+    editIndex.value = i;
+  }
+
+  async function deleteProduct(i){
+    const docRef = doc(db, "products", products[i].id);
+    await deleteDoc(docRef);
+    products.splice(i,1);
+    renderProducts(); renderAdmin();
+  }
+
+  function addToCart(i){
+    if(products[i].stock <= 0){ alert("Out of stock!"); return; }
+    const c = cart.find(x => x.i===i);
+    if(c) c.q++; else cart.push({i,q:1});
+    products[i].stock--;
+    updateCartCount();
+    renderCart(); renderProducts(); renderAdmin();
+  }
+
+  function renderCart(){
+    cartItems.innerHTML = '';
+    let total = 0;
+    cart.forEach(c => {
+      const p = products[c.i];
+      const l = p.price*c.q;
+      total += l;
+      cartItems.innerHTML += `
+      <div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition">
+        <img src="${p.image}" class="w-16 h-16 object-cover rounded-lg">
+        <div class="flex-1">
+          <h4 class="font-semibold">${p.name}</h4>
+          <p class="text-sm text-gray-500">${c.q} x ${p.price} DH</p>
+        </div>
+        <div class="font-semibold">${l} DH</div>
+      </div>`;
+    });
+    cartTotal.innerText = total+' DH';
+  }
+
+  function updateCartCount(){
+    cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
+  }
+
+  function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart();}
+  function closeCart(){cartPanel.classList.add('translate-x-full');}
+  function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden');}
+  function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; renderProducts(); renderAdmin(); updateCartCount(); showShop();}
+
+  function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
+  function loginAdmin(){
+    const input = adminPasswordInput.value;
+    if(input === ADMIN_PASSWORD){ adminUnlocked = true; loginPage.classList.add('hidden'); loginError.classList.add('hidden'); adminPasswordInput.value=''; openAdminPage();}
+    else loginError.classList.remove('hidden');
+  }
+  function openAdminPage(){ shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin();}
+  function logoutAdmin(){ adminUnlocked=false; showShop();}
+  function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden');}
+
+  function initFloatingEffect(){
+    document.querySelectorAll('.product-card').forEach(card=>{
+      card.addEventListener('mousemove',e=>{
+        const rect=card.getBoundingClientRect();
+        const x=e.clientX-(rect.left+rect.width/2);
+        const y=e.clientY-(rect.top+rect.height/2);
+        card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`;
+      });
+      card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)');
+    });
+  }
+
+  togglePassword.addEventListener('click', () => {
+    if(adminPasswordInput.type === "password"){ adminPasswordInput.type="text"; togglePassword.textContent="🙈"; }
+    else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; }
   });
-}
 
-// Save product
-function saveProduct(){
-  const i = editIndex.value;
-  const data={ name:pName.value, price:+pPrice.value, stock:+pStock.value, capacity:+pCapacity.value,
-    production:pProduction.value, expiration:pExpiration.value, image:pImage.value };
-  if(i==='') products.push(data); else products[i]=data;
-  localStorage.setItem('products', JSON.stringify(products));
-  editIndex.value=''; pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
-  renderProducts(); renderAdmin();
-}
-
-// Edit/Delete
-function editProduct(i){ const p=products[i]; pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity;
-  pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image; editIndex.value=i; }
-function deleteProduct(i){ products.splice(i,1); localStorage.setItem('products', JSON.stringify(products)); renderProducts(); renderAdmin(); }
-
-// Cart
-function addToCart(i){ if(products[i].stock<=0){ alert("Out of stock!"); return; } const c=cart.find(x=>x.i===i); if(c) c.q++; else cart.push({i,q:1}); products[i].stock--; localStorage.setItem('products',JSON.stringify(products)); localStorage.setItem('cart',JSON.stringify(cart)); cartCount.innerText=cart.reduce((a,b)=>a+b.q,0); renderCart(); renderProducts(); renderAdmin(); }
-function renderCart(){let t=0;cartItems.innerHTML='';cart.forEach(c=>{const p=products[c.i];const l=p.price*c.q;t+=l;cartItems.innerHTML+=`<div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition"><img src="${p.image}" class="w-16 h-16 object-cover rounded-lg"><div class="flex-1"><h4 class="font-semibold">${p.name}</h4><p class="text-sm text-gray-500">${c.q} x ${p.price} DH</p></div><div class="font-semibold">${l} DH</div></div>`}); cartTotal.innerText=t+' DH'; localStorage.setItem('cart',JSON.stringify(cart)); }
-function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart();}
-function closeCart(){cartPanel.classList.add('translate-x-full');}
-function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden');}
-function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; localStorage.setItem('cart',JSON.stringify(cart)); renderProducts(); renderAdmin(); cartCount.innerText=0; showShop();}
-
-// LOGIN
-function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
-function loginAdmin(){ const input=document.getElementById('adminPasswordInput').value;
-  if(input===ADMIN_PASSWORD){ adminUnlocked=true; loginPage.classList.add('hidden'); document.getElementById('adminPasswordInput').value=''; document.getElementById('loginError').classList.add('hidden'); openAdminPage(); } 
-  else document.getElementById('loginError').classList.remove('hidden'); }
-function openAdminPage(){ if(!adminUnlocked) return; shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin(); }
-function logoutAdmin(){ adminUnlocked=false; showShop(); }
-function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden');}
-
-// Floating product effect
-function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`}); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
-
-// Toggle password eye
-const togglePassword = document.getElementById('togglePassword');
-const passwordInput = document.getElementById('adminPasswordInput');
-togglePassword.addEventListener('click', () => {
-  if(passwordInput.type === "password"){ passwordInput.type="text"; togglePassword.textContent="🙈"; }
-  else{ passwordInput.type="password"; togglePassword.textContent="👁"; }
-});
-
-// Initial render
-renderProducts(); renderAdmin(); initFloatingEffect(); cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-
+  loadProducts();
 </script>
 </body>
 </html>
