@@ -5,18 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oubrou Market</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.9.0/dist/supabase.min.js"></script>
 <style>
-/* Floating hover effect for products */
-.product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; transform-style: preserve-3d; cursor:pointer; position:relative; border-radius:1rem; overflow:hidden; }
+.product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor:pointer; border-radius:1rem; overflow:hidden; }
 .product-card:hover { transform: translateY(-10px) rotateY(5deg) rotateX(5deg); box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
-.price-badge { position: absolute; top: 10px; right: 10px; background: linear-gradient(to right, #4f46e5, #7c3aed); color:white; padding:0.5rem 1rem; border-radius:9999px; font-weight:bold; font-size:0.9rem; }
+.price-badge { position: absolute; top: 10px; right: 10px; background: linear-gradient(to right,#4f46e5,#7c3aed); color:white; padding:0.5rem 1rem; border-radius:9999px; font-weight:bold; font-size:0.9rem; }
 .stock-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius:9999px; overflow:hidden; margin-top:6px; }
-.stock-fill { height: 100%; background: linear-gradient(to right, #4f46e5, #7c3aed); border-radius:9999px; transition: width 0.3s ease; }
-@keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
-.animate-fadeIn { animation: fadeIn 1s ease forwards; }
-.delay-1 { animation-delay:0.3s; }
+.stock-fill { height: 100%; background: linear-gradient(to right,#4f46e5,#7c3aed); border-radius:9999px; transition: width 0.3s ease; }
 </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
@@ -43,14 +38,6 @@
 
 <!-- SHOP PAGE -->
 <section id="shopPage" class="max-w-7xl mx-auto px-6 py-12">
-  <!-- Hero Section -->
-  <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl text-white p-12 mb-12 shadow-lg flex flex-col items-center text-center">
-    <h1 class="text-4xl md:text-5xl font-bold mb-4 animate-fadeIn">Welcome to Oubrou Market</h1>
-    <p class="text-lg md:text-xl mb-6 animate-fadeIn delay-1">Your professional online market with fresh products</p>
-    <button onclick="scrollToProducts()" class="bg-white text-indigo-600 font-bold px-6 py-3 rounded-full shadow-lg hover:scale-105 transition transform">Shop Now</button>
-  </div>
-
-  <!-- Products Grid -->
   <h2 class="text-3xl font-bold mb-8 text-gray-800">Our Products</h2>
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
@@ -123,17 +110,10 @@
 </section>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyABCrx6YzrWtLbHPpQL97GkGu2SCU5MdPw",
-  authDomain: "oubrou-market.firebaseapp.com",
-  projectId: "oubrou-market",
-  storageBucket: "oubrou-market.firebasestorage.app",
-  messagingSenderId: "593090931508",
-  appId: "1:593090931508:web:3708017c3849be95109361",
-  measurementId: "G-W8QJ3TYXWK"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// Supabase setup
+const SUPABASE_URL = "https://qzozwhxbzmldevbwdpep.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6b3p3aHhiem1sZGV2YndkcGVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4OTM5MzgsImV4cCI6MjA4MzQ2OTkzOH0.3ze6Wi1soRWTjLMiZBdG9gNUtX0_LORzlwmJctntJyQ";
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let products = [];
 let cart = [];
@@ -144,18 +124,15 @@ const adminPasswordInput = document.getElementById("adminPasswordInput");
 const togglePassword = document.getElementById("togglePassword");
 const loginError = document.getElementById("loginError");
 
-// Load products from Firebase
-function loadProducts() {
-  products = [];
-  db.collection("products").get().then(snapshot=>{
-    snapshot.forEach(doc=>{
-      products.push({id: doc.id, ...doc.data()});
-    });
-    renderProducts();
-    renderAdmin();
-    updateCartCount();
-    initFloatingEffect();
-  });
+// Load products from Supabase
+async function loadProducts() {
+  let { data, error } = await supabase.from('products').select('*').order('id', { ascending:true });
+  if(error){ console.error(error); return; }
+  products = data;
+  renderProducts();
+  renderAdmin();
+  updateCartCount();
+  initFloatingEffect();
 }
 
 // Shop rendering
@@ -220,7 +197,7 @@ togglePassword.addEventListener('click',()=>{
   else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; }
 });
 
-// CRUD functions (fixed for Firebase)
+// CRUD functions (Supabase)
 async function saveProduct(){
   const i = editIndex.value;
   const data = {
@@ -234,20 +211,23 @@ async function saveProduct(){
   };
   try {
     if(i===''){
-      const docRef = await db.collection("products").add(data);
-      products.push({id: docRef.id, ...data});
+      const { data: newProduct, error } = await supabase.from('products').insert([data]).select().single();
+      if(error) throw error;
+      products.push(newProduct);
     } else {
-      await db.collection("products").doc(products[i].id).set(data);
-      products[i] = {id: products[i].id, ...data};
+      const { error } = await supabase.from('products').update(data).eq('id', products[i].id);
+      if(error) throw error;
+      products[i] = {...products[i], ...data};
     }
     editIndex.value='';
     pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
     renderProducts();
     renderAdmin();
-  } catch(e){ console.error(e); alert("Failed to save product. Check Firebase."); }
+  } catch(e){ console.error(e); alert("Failed to save product. Check Supabase."); }
 }
+
 function editProduct(i){ const p=products[i]; pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity; pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image; editIndex.value=i; }
-function deleteProduct(i){ db.collection("products").doc(products[i].id).delete().then(()=>{ products.splice(i,1); renderProducts(); renderAdmin(); }); }
+async function deleteProduct(i){ await supabase.from('products').delete().eq('id', products[i].id); products.splice(i,1); renderProducts(); renderAdmin(); }
 
 // Cart
 function addToCart(i){ if(products[i].stock<=0){alert("Out of stock"); return;} const c=cart.find(x=>x.i===i); if(c)c.q++; else cart.push({i,q:1}); products[i].stock--; updateCartCount(); renderCart(); renderProducts(); renderAdmin(); }
@@ -260,8 +240,6 @@ function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; renderProducts()
 
 // Floating effect
 function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{ const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`; }); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
-
-function scrollToProducts(){ window.scrollTo({ top: document.getElementById('productList').offsetTop - 100, behavior:'smooth' }); }
 
 loadProducts();
 </script>
