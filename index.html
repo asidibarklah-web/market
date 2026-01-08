@@ -96,7 +96,6 @@
 // ================= SUPABASE KEYS =================
 const SUPABASE_URL = "https://qzozwhxbzmldevbwdpep.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6b3p3aHhiemxkZXZid2RlcHciLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2Nzg5MzkzOCwiZXhwIjoyMDgzNDY5OTM4fQ.3ze6Wi1soRWTjLMiZBdG9gNUtX0_LORzlwmJctntJyQ";
-const SUPABASE_API_KEY = "sb_publishable_iIF7Z6L7k7eF9yG1D9ozyA_onC8ylLT";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -155,69 +154,59 @@ function renderShop() {
   });
 }
 
-// ================= CART WITH QUANTITY =================
+// ================= CART =================
 function addToCart(i){
   const p = products[i];
   const cartItem = cart.find(item => item.id === p.id);
-  
   if(cartItem){
-    if(cartItem.quantity < p.current_capacity){
-      cartItem.quantity++;
-      p.current_capacity--;
-    } else {
-      alert("No more stock available!");
-      return;
-    }
+    if(p.current_capacity <= 0){ alert("No more stock!"); return; }
+    cartItem.quantity++;
+    p.current_capacity--;
   } else {
     if(p.current_capacity <= 0){ alert("Out of stock!"); return; }
-    cart.push({...p, quantity: 1});
+    cart.push({...p, quantity:1});
     p.current_capacity--;
   }
-  
-  cartCount.innerText = cart.reduce((sum,item)=>sum+item.quantity,0);
+  cartCount.innerText = cart.reduce((sum,i)=>sum+i.quantity,0);
   renderCart();
   renderShop();
 }
 
 function renderCart(){
-  cartItems.innerHTML = "";
-  let total = 0;
-  
-  cart.forEach((item, index)=>{
-    total += item.price * item.quantity;
+  cartItems.innerHTML="";
+  let total=0;
+  cart.forEach((item,index)=>{
+    total += item.price*item.quantity;
     cartItems.innerHTML += `
-      <div class="flex gap-3 items-center border-b pb-2">
-        <img src="${item.image}" class="h-12 w-12 object-cover rounded">
-        <div class="flex-1">
-          <div class="font-semibold">${item.name}</div>
-          <div class="flex items-center gap-2 mt-1">
-            <button onclick="updateQuantity(${index}, -1)" class="bg-gray-200 px-2 rounded">-</button>
-            <span>${item.quantity}</span>
-            <button onclick="updateQuantity(${index}, 1)" class="bg-gray-200 px-2 rounded">+</button>
-          </div>
+    <div class="flex gap-3 items-center border-b pb-2">
+      <img src="${item.image}" class="h-12 w-12 object-cover rounded">
+      <div class="flex-1">
+        <div class="font-semibold">${item.name}</div>
+        <div class="flex items-center gap-2 mt-1">
+          <button onclick="updateQuantity(${index},-1)" class="bg-gray-200 px-2 rounded">-</button>
+          <span>${item.quantity}</span>
+          <button onclick="updateQuantity(${index},1)" class="bg-gray-200 px-2 rounded">+</button>
         </div>
-        <span>${(item.price * item.quantity).toFixed(2)} DH</span>
-        <button onclick="removeItem(${index})" class="text-red-500 ml-2">x</button>
-      </div>`;
+      </div>
+      <span>${(item.price*item.quantity).toFixed(2)} DH</span>
+      <button onclick="removeItem(${index})" class="text-red-500 ml-2">x</button>
+    </div>`;
   });
-  
   cartTotal.innerText = total.toFixed(2);
 }
 
-function updateQuantity(index, change){
+function updateQuantity(index,change){
   const item = cart[index];
   const product = products.find(p => p.id === item.id);
-  
-  if(change === 1){
-    if(product.current_capacity <= 0){ alert("No more stock!"); return; }
+  if(change===1){
+    if(product.current_capacity<=0){ alert("No more stock!"); return; }
     item.quantity++;
     product.current_capacity--;
   } else {
-    if(item.quantity <= 1){ removeItem(index); return; }
+    if(item.quantity<=1){ removeItem(index); return; }
     item.quantity--;
     product.current_capacity++;
   }
-  
   cartCount.innerText = cart.reduce((sum,i)=>sum+i.quantity,0);
   renderCart();
   renderShop();
@@ -225,10 +214,9 @@ function updateQuantity(index, change){
 
 function removeItem(index){
   const item = cart[index];
-  const product = products.find(p => p.id === item.id);
-  product.current_capacity += item.quantity;
-  cart.splice(index, 1);
-  
+  const product = products.find(p => p.id===item.id);
+  product.current_capacity+=item.quantity;
+  cart.splice(index,1);
   cartCount.innerText = cart.reduce((sum,i)=>sum+i.quantity,0);
   renderCart();
   renderShop();
@@ -238,37 +226,30 @@ function removeItem(index){
 function openCheckout(){
   if(cart.length===0){ alert("Cart is empty"); return; }
   checkoutBox.classList.remove("hidden");
-  checkoutItems.innerHTML = "";
-  let total = 0;
-  
+  checkoutItems.innerHTML="";
+  let total=0;
   cart.forEach(item=>{
-    total += item.price * item.quantity;
-    checkoutItems.innerHTML += `
-      <div class="flex gap-3 items-center border-b pb-2">
-        <img src="${item.image}" class="h-12 w-12 object-cover rounded">
-        <span>${item.name} x${item.quantity}</span>
-        <span>${(item.price * item.quantity).toFixed(2)} DH</span>
-      </div>`;
+    total+=item.price*item.quantity;
+    checkoutItems.innerHTML+=`
+    <div class="flex gap-3 items-center border-b pb-2">
+      <img src="${item.image}" class="h-12 w-12 object-cover rounded">
+      <span>${item.name} x${item.quantity}</span>
+      <span>${(item.price*item.quantity).toFixed(2)} DH</span>
+    </div>`;
   });
-  
   checkoutTotal.innerText = total.toFixed(2);
 }
+function closeCheckout(){ checkoutBox.classList.add("hidden"); }
 
 async function confirmOrder(){
-  const name = customerName.value, phone = customerPhone.value, address = customerAddress.value;
-  if(!name || !phone || !address){ alert("Fill all fields"); return; }
-  
+  const name=customerName.value, phone=customerPhone.value, address=customerAddress.value;
+  if(!name||!phone||!address){ alert("Fill all fields"); return; }
   const items = cart.map(p=>({id:p.id,name:p.name,price:p.price,quantity:p.quantity}));
   const total = cart.reduce((a,b)=>a+b.price*b.quantity,0);
-  
-  const { error } = await supabase.from("orders").insert([{customer_name:name,phone,address,items,total}]);
+  const {error} = await supabase.from("orders").insert([{customer_name:name,phone,address,items,total}]);
   if(error){ alert(error.message); return; }
-  
-  cart = [];
-  cartCount.innerText = 0;
-  renderCart();
-  closeCheckout();
-  customerName.value = customerPhone.value = customerAddress.value = "";
+  cart=[]; cartCount.innerText=0; renderCart(); closeCheckout();
+  customerName.value=customerPhone.value=customerAddress.value="";
   alert("Order confirmed! Thank you.");
 }
 
@@ -276,10 +257,8 @@ async function confirmOrder(){
 function openAdminLogin(){ adminLogin.classList.remove("hidden"); }
 function togglePassword(){ adminPassword.type=adminPassword.type==="password"?"text":"password"; }
 function loginAdmin(){
-  if(adminPassword.value==="Oubrou12345"){
-    adminLogin.classList.add("hidden");
-    adminPanel.classList.remove("hidden");
-  }else alert("Wrong password");
+  if(adminPassword.value==="Oubrou12345"){ adminLogin.classList.add("hidden"); adminPanel.classList.remove("hidden"); }
+  else alert("Wrong password");
 }
 function closeAdmin(){ adminPanel.classList.add("hidden"); }
 
@@ -295,7 +274,7 @@ async function addProduct(){
 }
 
 async function deleteProduct(id){
-  const { error } = await supabase.from("products").delete().eq("id",id);
+  const {error} = await supabase.from("products").delete().eq("id",id);
   if(error){ alert(error.message); return; }
   loadProducts();
 }
