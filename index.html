@@ -103,12 +103,9 @@
 </section>
 
 <script>
-let products = [];
-let cart = [];
-
 // ----------------- LOCAL STORAGE -----------------
-if(localStorage.getItem('products')) products = JSON.parse(localStorage.getItem('products'));
-if(localStorage.getItem('cart')) cart = JSON.parse(localStorage.getItem('cart'));
+let products = JSON.parse(localStorage.getItem('products')) || [];
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 // ----------------- SHOP -----------------
 function renderProducts() {
@@ -166,7 +163,6 @@ function saveProduct(){
   };
   if(i==='') products.push(data); else products[i]=data;
 
-  // Save to localStorage
   localStorage.setItem('products', JSON.stringify(products));
 
   editIndex.value=''; 
@@ -181,18 +177,26 @@ function editProduct(i){
   editIndex.value=i;
 }
 
-function deleteProduct(i){products.splice(i,1); renderProducts(); renderAdmin(); localStorage.setItem('products', JSON.stringify(products));}
+function deleteProduct(i){
+  products.splice(i,1);
+  localStorage.setItem('products', JSON.stringify(products));
+  renderProducts(); renderAdmin();
+}
 
 // ----------------- CART -----------------
 function addToCart(i){
   if(products[i].stock <= 0){ alert("Out of stock!"); return; }
   const c=cart.find(x=>x.i===i);
-  c ? c.q++ : cart.push({i,q:1});
+  if(c) c.q++; else cart.push({i,q:1});
   products[i].stock--;
-  cartCount.innerText=cart.reduce((a,b)=>a+b.q,0);
-  renderCart(); renderProducts(); renderAdmin();
+  
   localStorage.setItem('products', JSON.stringify(products));
   localStorage.setItem('cart', JSON.stringify(cart));
+
+  cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
+  renderCart();
+  renderProducts();
+  renderAdmin();
 }
 
 function renderCart(){
@@ -220,7 +224,15 @@ function renderCart(){
 function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart()}
 function closeCart(){cartPanel.classList.add('translate-x-full')}
 function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden')}
-function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; cartCount.innerText=0; renderProducts(); renderAdmin(); localStorage.setItem('cart','[]'); showShop();}
+function confirmOrder(){
+  alert('✅ Order confirmed!');
+  cart=[];
+  localStorage.setItem('cart', JSON.stringify(cart));
+  renderProducts();
+  renderAdmin();
+  cartCount.innerText=0;
+  showShop();
+}
 function showAdmin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin()}
 function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
 
@@ -241,6 +253,7 @@ function initFloatingEffect(){
 renderProducts();
 renderAdmin();
 initFloatingEffect();
+cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
 </script>
 
 </body>
