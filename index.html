@@ -8,14 +8,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
-.product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; transform-style: preserve-3d; }
-.product-card:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+/* Floating hover effect for products */
+.product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; transform-style: preserve-3d; cursor:pointer; position:relative; border-radius:1rem; overflow:hidden; }
+.product-card:hover { transform: translateY(-10px) rotateY(5deg) rotateX(5deg); box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
+.price-badge { position: absolute; top: 10px; right: 10px; background: linear-gradient(to right, #4f46e5, #7c3aed); color:white; padding:0.5rem 1rem; border-radius:9999px; font-weight:bold; font-size:0.9rem; }
+.stock-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius:9999px; overflow:hidden; margin-top:6px; }
+.stock-fill { height: 100%; background: linear-gradient(to right, #4f46e5, #7c3aed); border-radius:9999px; transition: width 0.3s ease; }
+@keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+.animate-fadeIn { animation: fadeIn 1s ease forwards; }
+.delay-1 { animation-delay:0.3s; }
 </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
 <!-- HEADER -->
-<header class="bg-white border-b sticky top-0 z-40">
+<header class="bg-white border-b sticky top-0 z-40 shadow-sm">
   <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-4">
       <div class="bg-primary text-white p-3 rounded-xl shadow">🏪</div>
@@ -34,9 +41,17 @@
   </div>
 </header>
 
-<!-- SHOP -->
+<!-- SHOP PAGE -->
 <section id="shopPage" class="max-w-7xl mx-auto px-6 py-12">
-  <h2 class="text-2xl font-bold mb-6">Products</h2>
+  <!-- Hero Section -->
+  <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl text-white p-12 mb-12 shadow-lg flex flex-col items-center text-center">
+    <h1 class="text-4xl md:text-5xl font-bold mb-4 animate-fadeIn">Welcome to Oubrou Market</h1>
+    <p class="text-lg md:text-xl mb-6 animate-fadeIn delay-1">Your professional online market with fresh products</p>
+    <button onclick="scrollToProducts()" class="bg-white text-indigo-600 font-bold px-6 py-3 rounded-full shadow-lg hover:scale-105 transition transform">Shop Now</button>
+  </div>
+
+  <!-- Products Grid -->
+  <h2 class="text-3xl font-bold mb-8 text-gray-800">Our Products</h2>
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
 
@@ -53,7 +68,7 @@
   </div>
 </section>
 
-<!-- ADMIN -->
+<!-- ADMIN PAGE -->
 <section id="adminPage" class="hidden max-w-7xl mx-auto px-6 py-12">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold">Admin Dashboard</h2>
@@ -81,7 +96,7 @@
   </div>
 </section>
 
-<!-- CART -->
+<!-- CART PANEL -->
 <div id="cartPanel" class="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50">
   <div class="p-6 flex flex-col h-full">
     <div class="flex justify-between items-center mb-4">
@@ -117,7 +132,6 @@ const firebaseConfig = {
   appId: "1:593090931508:web:3708017c3849be95109361",
   measurementId: "G-W8QJ3TYXWK"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -126,12 +140,11 @@ let cart = [];
 const ADMIN_PASSWORD = "Oubrou12345";
 let adminUnlocked = false;
 
-// DOM elements
 const adminPasswordInput = document.getElementById("adminPasswordInput");
 const togglePassword = document.getElementById("togglePassword");
 const loginError = document.getElementById("loginError");
 
-// Load products
+// Load products from Firebase
 function loadProducts() {
   products = [];
   db.collection("products").get().then(snapshot=>{
@@ -145,26 +158,24 @@ function loadProducts() {
   });
 }
 
-// Render Shop
+// Shop rendering
 function renderProducts() {
   productList.innerHTML='';
   products.forEach((p,i)=>{
-    const stockPercent = Math.min(100, (p.stock/p.capacity)*100);
+    const stockPercent = Math.min(100,(p.stock/p.capacity)*100);
     productList.innerHTML+=`
     <div class='product-card bg-white rounded-2xl shadow p-6 flex flex-col items-center'>
+      <div class="price-badge">${p.price} DH</div>
       <img src='${p.image}' class='h-40 w-40 object-cover rounded-lg mb-3'>
       <h4 class='font-semibold mt-2'>${p.name}</h4>
-      <p class='text-gray-600 mb-1'>${p.price} DH</p>
-      <div class="w-full bg-gray-200 rounded-full h-3 mb-1">
-        <div class="bg-primary h-3 rounded-full transition-all" style="width:${stockPercent}%"></div>
-      </div>
+      <div class="stock-bar"><div class="stock-fill" style="width:${stockPercent}%"></div></div>
       <p class="text-sm text-gray-500 mb-2">Stock: ${p.stock} / ${p.capacity}</p>
       <button onclick='addToCart(${i})' class='mt-2 w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition'>Add to cart</button>
     </div>`;
   });
 }
 
-// Render Admin
+// Admin rendering
 function renderAdmin() {
   if(!adminUnlocked) return;
   const list = document.getElementById('adminProductsList');
@@ -188,9 +199,9 @@ function renderAdmin() {
   });
 }
 
-// Login
+// Admin login
 function loginAdmin(){
-  if(adminPasswordInput.value === ADMIN_PASSWORD){
+  if(adminPasswordInput.value===ADMIN_PASSWORD){
     adminUnlocked=true;
     adminPasswordInput.value='';
     loginError.classList.add('hidden');
@@ -203,22 +214,37 @@ function logoutAdmin(){ adminUnlocked=false; showShop(); }
 function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
 function showShop(){shopPage.classList.remove('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.add('hidden');}
 
-// Password eye
+// Password eye toggle
 togglePassword.addEventListener('click',()=>{
   if(adminPasswordInput.type==="password"){ adminPasswordInput.type="text"; togglePassword.textContent="🙈"; }
   else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; }
 });
 
-// CRUD functions
-function saveProduct(){
-  const i=editIndex.value;
-  const data={
-    name:pName.value, price:+pPrice.value, stock:+pStock.value, capacity:+pCapacity.value,
-    production:pProduction.value, expiration:pExpiration.value, image:pImage.value
+// CRUD functions (fixed for Firebase)
+async function saveProduct(){
+  const i = editIndex.value;
+  const data = {
+    name: pName.value,
+    price: +pPrice.value,
+    stock: +pStock.value,
+    capacity: +pCapacity.value,
+    production: pProduction.value,
+    expiration: pExpiration.value,
+    image: pImage.value
   };
-  if(i===''){ db.collection("products").add(data).then(docRef=>{ products.push({id:docRef.id,...data}); renderProducts(); renderAdmin(); }); }
-  else{ db.collection("products").doc(products[i].id).set(data).then(()=>{ products[i]={id:products[i].id,...data}; renderProducts(); renderAdmin(); }); }
-  editIndex.value=''; pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
+  try {
+    if(i===''){
+      const docRef = await db.collection("products").add(data);
+      products.push({id: docRef.id, ...data});
+    } else {
+      await db.collection("products").doc(products[i].id).set(data);
+      products[i] = {id: products[i].id, ...data};
+    }
+    editIndex.value='';
+    pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
+    renderProducts();
+    renderAdmin();
+  } catch(e){ console.error(e); alert("Failed to save product. Check Firebase."); }
 }
 function editProduct(i){ const p=products[i]; pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity; pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image; editIndex.value=i; }
 function deleteProduct(i){ db.collection("products").doc(products[i].id).delete().then(()=>{ products.splice(i,1); renderProducts(); renderAdmin(); }); }
@@ -234,6 +260,8 @@ function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; renderProducts()
 
 // Floating effect
 function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{ const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`; }); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
+
+function scrollToProducts(){ window.scrollTo({ top: document.getElementById('productList').offsetTop - 100, behavior:'smooth' }); }
 
 loadProducts();
 </script>
