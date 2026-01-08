@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Market</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
+  </script>
+  <style>
+    .product-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transform-style: preserve-3d;
+    }
+    .product-card:hover {
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-white border-b sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-4">
+      <div class="bg-primary text-white p-3 rounded-xl shadow">🏪</div>
+      <div>
+        <h1 class="font-bold text-xl">Digital Market</h1>
+        <p class="text-sm text-gray-500">Professional Market System</p>
+      </div>
+    </div>
+    <nav class="flex items-center gap-6">
+      <button onclick="showShop()" class="font-medium hover:text-primary">Shop</button>
+      <button onclick="showAdmin()" class="font-medium hover:text-primary">Admin</button>
+      <button onclick="openCart()" class="relative bg-primary text-white px-4 py-2 rounded-xl shadow">Cart
+        <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- SHOP -->
+<section id="shopPage" class="max-w-7xl mx-auto px-6 py-12">
+  <h2 class="text-2xl font-bold mb-6">Products</h2>
+  <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+</section>
+
+<!-- ADMIN -->
+<section id="adminPage" class="hidden max-w-7xl mx-auto px-6 py-12">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Admin Dashboard</h2>
+    <button onclick="showShop()" class="text-primary font-semibold hover:underline">← Back to shop</button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Add/Edit Product Card -->
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h3 class="font-semibold text-lg mb-4">Add / Edit Product</h3>
+      <input id="pName" placeholder="Name" class="border rounded p-2 w-full mb-2">
+      <input id="pPrice" type="number" placeholder="Price (DH)" class="border rounded p-2 w-full mb-2">
+      <input id="pStock" type="number" placeholder="Current stock" class="border rounded p-2 w-full mb-2">
+      <input id="pCapacity" type="number" placeholder="Total capacity" class="border rounded p-2 w-full mb-2">
+      <input id="pProduction" type="date" placeholder="Date of Production" class="border rounded p-2 w-full mb-2">
+      <input id="pExpiration" type="date" placeholder="Date of Expiration" class="border rounded p-2 w-full mb-3">
+      <input id="pImage" placeholder="Image URL" class="border rounded p-2 w-full mb-3">
+      <button onclick="saveProduct()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Save Product</button>
+      <input type="hidden" id="editIndex">
+    </div>
+  </div>
+
+  <!-- Product List -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-lg font-semibold mb-4">Product List</h3>
+    <div id="adminProductsList" class="space-y-4"></div>
+  </div>
+</section>
+
+<!-- CART -->
+<div id="cartPanel" class="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50">
+  <div class="p-6 flex flex-col h-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">🛒 Your Cart</h3>
+      <button onclick="closeCart()" class="text-gray-500 hover:text-gray-800 text-xl">✕</button>
+    </div>
+    <div class="flex-1 overflow-y-auto space-y-4">
+      <div id="cartItems" class="flex flex-col gap-3"></div>
+    </div>
+    <div class="border-t pt-4">
+      <div class="flex justify-between font-bold text-lg mb-4"><span>Total</span><span id="cartTotal">0 DH</span></div>
+      <button onclick="checkout()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Checkout</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT -->
+<section id="checkoutPage" class="hidden max-w-2xl mx-auto px-6 py-12">
+  <h2 class="text-2xl font-bold mb-6">Checkout</h2>
+  <div class="bg-white rounded-2xl shadow p-6 flex flex-col items-center">
+    <p class="mb-6 text-gray-700">You're about to confirm your order.</p>
+    <button onclick="confirmOrder()" class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-indigo-600 transition">Confirm Order</button>
+  </div>
+</section>
+
+<script>
+let products = [
+  { name: 'Lait', price: 2, stock: 1500, capacity: 2000, production:'2025-01-01', expiration:'2026-01-01', image: 'https://via.placeholder.com/300?text=Lait' },
+  { name: 'Sugar', price: 1.5, stock: 1200, capacity: 2000, production:'2025-02-01', expiration:'2026-02-01', image: 'https://via.placeholder.com/300?text=Sugar' },
+  { name: 'Coffee', price: 5, stock: 800, capacity: 1000, production:'2025-03-01', expiration:'2026-03-01', image: 'https://via.placeholder.com/300?text=Coffee' }
+];
+let cart = [];
+
+// ----------------- SHOP -----------------
+function renderProducts() {
+  productList.innerHTML='';
+  products.forEach((p,i)=>{
+    const stockPercent = Math.min(100, (p.stock/p.capacity)*100);
+    productList.innerHTML+=`
+      <div class='product-card bg-white rounded-2xl shadow p-6 flex flex-col items-center'>
+        <img src='${p.image}' class='h-40 w-40 object-cover rounded-lg mb-3'>
+        <h4 class='font-semibold mt-2'>${p.name}</h4>
+        <p class='text-gray-600 mb-1'>${p.price} DH</p>
+        <div class="w-full bg-gray-200 rounded-full h-3 mb-1">
+          <div class="bg-primary h-3 rounded-full transition-all" style="width:${stockPercent}%"></div>
+        </div>
+        <p class="text-sm text-gray-500 mb-2">Stock: ${p.stock} / ${p.capacity}</p>
+        <button onclick='addToCart(${i})' class='mt-2 w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition'>Add to cart</button>
+      </div>`;
+  })
+}
+
+// ----------------- ADMIN -----------------
+function renderAdmin(){
+  const list = document.getElementById('adminProductsList');
+  list.innerHTML='';
+  products.forEach((p,i)=>{
+    list.innerHTML += `
+      <div class="flex items-center gap-4 p-4 rounded-xl shadow hover:shadow-lg transition bg-gray-50">
+        <img src="${p.image}" class="w-24 h-24 object-cover rounded-lg">
+        <div class="flex-1">
+          <h4 class="font-semibold text-lg">${p.name}</h4>
+          <p class="text-gray-600">Price: ${p.price} DH</p>
+          <p class="text-gray-500 text-sm">Current / Total: ${p.stock} / ${p.capacity}</p>
+          <p class="text-gray-500 text-sm">Production: ${p.production}</p>
+          <p class="text-gray-500 text-sm">Expiration: ${p.expiration}</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button onclick='editProduct(${i})' class="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">Edit</button>
+          <button onclick='deleteProduct(${i})' class="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition">Delete</button>
+        </div>
+      </div>`;
+  });
+}
+
+function saveProduct(){
+  const i = editIndex.value;
+  const data={
+    name:pName.value,
+    price:+pPrice.value,
+    stock:+pStock.value,
+    capacity:+pCapacity.value,
+    production:pProduction.value,
+    expiration:pExpiration.value,
+    image:pImage.value
+  };
+  if(i==='') products.push(data); else products[i]=data;
+  editIndex.value=''; 
+  pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
+  renderProducts(); renderAdmin();
+}
+
+function editProduct(i){
+  const p=products[i];
+  pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity;
+  pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image;
+  editIndex.value=i;
+}
+
+function deleteProduct(i){products.splice(i,1); renderProducts(); renderAdmin();}
+
+// ----------------- CART -----------------
+function addToCart(i){
+  if(products[i].stock <= 0){ alert("Out of stock!"); return; }
+  const c=cart.find(x=>x.i===i);
+  c ? c.q++ : cart.push({i,q:1});
+  products[i].stock--;
+  cartCount.innerText=cart.reduce((a,b)=>a+b.q,0);
+  renderCart(); renderProducts(); renderAdmin();
+}
+
+function renderCart(){
+  let t=0;
+  cartItems.innerHTML='';
+  cart.forEach(c=>{
+    const p=products[c.i];
+    const l=p.price*c.q;
+    t+=l;
+
+    cartItems.innerHTML += `
+      <div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition">
+        <img src="${p.image}" class="w-16 h-16 object-cover rounded-lg">
+        <div class="flex-1">
+          <h4 class="font-semibold">${p.name}</h4>
+          <p class="text-sm text-gray-500">${c.q} x ${p.price} DH</p>
+        </div>
+        <div class="font-semibold">${l} DH</div>
+      </div>`;
+  });
+  cartTotal.innerText = t + ' DH';
+}
+
+// ----------------- NAVIGATION -----------------
+function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart()}
+function closeCart(){cartPanel.classList.add('translate-x-full')}
+function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden')}
+function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; cartCount.innerText=0; renderProducts(); renderAdmin(); showShop();}
+function showAdmin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin()}
+function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
+
+// ----------------- FLOATING EFFECT ON SHOP CARDS -----------------
+function initFloatingEffect(){
+  document.querySelectorAll('.product-card').forEach(card=>{
+    card.addEventListener('mousemove', e=>{
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - (rect.left + rect.width/2);
+      const y = e.clientY - (rect.top + rect.height/2);
+      card.style.transform = `rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`;
+    });
+    card.addEventListener('mouseleave', ()=>card.style.transform='rotateY(0deg) rotateX(0deg)');
+  });
+}
+
+// ----------------- INITIAL RENDER -----------------
+renderProducts();
+initFloatingEffect();
+</script>
+
+</body>
+</html>
