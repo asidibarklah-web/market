@@ -103,6 +103,9 @@
 </section>
 
 <script>
+// ----------------- PASSWORD -----------------
+const ADMIN_PASSWORD = "admin123"; // Change your password here
+
 // ----------------- LOCAL STORAGE -----------------
 let products = JSON.parse(localStorage.getItem('products')) || [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -180,7 +183,8 @@ function editProduct(i){
 function deleteProduct(i){
   products.splice(i,1);
   localStorage.setItem('products', JSON.stringify(products));
-  renderProducts(); renderAdmin();
+  renderProducts();
+  renderAdmin();
 }
 
 // ----------------- CART -----------------
@@ -233,7 +237,20 @@ function confirmOrder(){
   cartCount.innerText=0;
   showShop();
 }
-function showAdmin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin()}
+
+// ----------------- ADMIN PASSWORD -----------------
+function showAdmin(){
+  const pass = prompt("Oubrou12345");
+  if(pass === ADMIN_PASSWORD){
+    shopPage.classList.add('hidden');
+    checkoutPage.classList.add('hidden');
+    adminPage.classList.remove('hidden');
+    renderAdmin();
+  } else {
+    alert("❌ Wrong password!");
+  }
+}
+
 function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
 
 // ----------------- FLOATING EFFECT -----------------
