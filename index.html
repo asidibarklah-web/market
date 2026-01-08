@@ -103,12 +103,12 @@
 </section>
 
 <script>
-let products = [
-  { name: 'Lait', price: 2, stock: 1500, capacity: 2000, production:'2025-01-01', expiration:'2026-01-01', image: 'https://via.placeholder.com/300?text=Lait' },
-  { name: 'Sugar', price: 1.5, stock: 1200, capacity: 2000, production:'2025-02-01', expiration:'2026-02-01', image: 'https://via.placeholder.com/300?text=Sugar' },
-  { name: 'Coffee', price: 5, stock: 800, capacity: 1000, production:'2025-03-01', expiration:'2026-03-01', image: 'https://via.placeholder.com/300?text=Coffee' }
-];
+let products = [];
 let cart = [];
+
+// ----------------- LOCAL STORAGE -----------------
+if(localStorage.getItem('products')) products = JSON.parse(localStorage.getItem('products'));
+if(localStorage.getItem('cart')) cart = JSON.parse(localStorage.getItem('cart'));
 
 // ----------------- SHOP -----------------
 function renderProducts() {
@@ -152,6 +152,7 @@ function renderAdmin(){
   });
 }
 
+// ----------------- SAVE PRODUCT -----------------
 function saveProduct(){
   const i = editIndex.value;
   const data={
@@ -164,6 +165,10 @@ function saveProduct(){
     image:pImage.value
   };
   if(i==='') products.push(data); else products[i]=data;
+
+  // Save to localStorage
+  localStorage.setItem('products', JSON.stringify(products));
+
   editIndex.value=''; 
   pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
   renderProducts(); renderAdmin();
@@ -176,7 +181,7 @@ function editProduct(i){
   editIndex.value=i;
 }
 
-function deleteProduct(i){products.splice(i,1); renderProducts(); renderAdmin();}
+function deleteProduct(i){products.splice(i,1); renderProducts(); renderAdmin(); localStorage.setItem('products', JSON.stringify(products));}
 
 // ----------------- CART -----------------
 function addToCart(i){
@@ -186,6 +191,8 @@ function addToCart(i){
   products[i].stock--;
   cartCount.innerText=cart.reduce((a,b)=>a+b.q,0);
   renderCart(); renderProducts(); renderAdmin();
+  localStorage.setItem('products', JSON.stringify(products));
+  localStorage.setItem('cart', JSON.stringify(cart));
 }
 
 function renderCart(){
@@ -195,7 +202,6 @@ function renderCart(){
     const p=products[c.i];
     const l=p.price*c.q;
     t+=l;
-
     cartItems.innerHTML += `
       <div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition">
         <img src="${p.image}" class="w-16 h-16 object-cover rounded-lg">
@@ -207,17 +213,18 @@ function renderCart(){
       </div>`;
   });
   cartTotal.innerText = t + ' DH';
+  localStorage.setItem('cart', JSON.stringify(cart));
 }
 
 // ----------------- NAVIGATION -----------------
 function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart()}
 function closeCart(){cartPanel.classList.add('translate-x-full')}
 function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden')}
-function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; cartCount.innerText=0; renderProducts(); renderAdmin(); showShop();}
+function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; cartCount.innerText=0; renderProducts(); renderAdmin(); localStorage.setItem('cart','[]'); showShop();}
 function showAdmin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin()}
 function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
 
-// ----------------- FLOATING EFFECT ON SHOP CARDS -----------------
+// ----------------- FLOATING EFFECT -----------------
 function initFloatingEffect(){
   document.querySelectorAll('.product-card').forEach(card=>{
     card.addEventListener('mousemove', e=>{
@@ -232,10 +239,9 @@ function initFloatingEffect(){
 
 // ----------------- INITIAL RENDER -----------------
 renderProducts();
+renderAdmin();
 initFloatingEffect();
 </script>
 
 </body>
 </html>
-
-
