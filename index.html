@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Market</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
-  </script>
-  <style>
-    .product-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      transform-style: preserve-3d;
-    }
-    .product-card:hover {
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Digital Market</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
+</script>
+<style>
+  .product-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transform-style: preserve-3d;
+  }
+  .product-card:hover {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+</style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
@@ -32,7 +32,7 @@
     </div>
     <nav class="flex items-center gap-6">
       <button onclick="showShop()" class="font-medium hover:text-primary">Shop</button>
-      <button onclick="showAdmin()" class="font-medium hover:text-primary">Admin</button>
+      <button onclick="showLogin()" class="font-medium hover:text-primary">Admin</button>
       <button onclick="openCart()" class="relative bg-primary text-white px-4 py-2 rounded-xl shadow">Cart
         <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
       </button>
@@ -46,7 +46,7 @@
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
 
-<!-- LOGIN PAGE -->
+<!-- ADMIN LOGIN -->
 <section id="loginPage" class="max-w-2xl mx-auto px-6 py-12 hidden">
   <div class="bg-white rounded-2xl shadow p-8 flex flex-col items-center">
     <h3 class="text-2xl font-bold mb-4">Admin Login</h3>
@@ -111,8 +111,8 @@
 </section>
 
 <script>
-// ----------------- ADMIN PASSWORD -----------------
-let ADMIN_PASSWORD = "admin123"; // change here
+// ----------------- PASSWORD -----------------
+const ADMIN_PASSWORD = "Oubrou12345";
 let adminUnlocked = false;
 
 // ----------------- LOCAL STORAGE -----------------
@@ -248,6 +248,13 @@ function confirmOrder(){
 }
 
 // ----------------- LOGIN -----------------
+function showLogin(){
+  shopPage.classList.add('hidden');
+  checkoutPage.classList.add('hidden');
+  adminPage.classList.add('hidden');
+  loginPage.classList.remove('hidden');
+}
+
 function loginAdmin() {
   const input = document.getElementById('adminPasswordInput').value;
   if (input === ADMIN_PASSWORD) {
@@ -268,7 +275,7 @@ function openAdminPage() {
   renderAdmin();
 }
 
-function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
+function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
 
 // ----------------- FLOATING EFFECT -----------------
 function initFloatingEffect(){
@@ -288,7 +295,7 @@ renderProducts();
 renderAdmin();
 initFloatingEffect();
 cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-</script>
 
+</script>
 </body>
 </html>
