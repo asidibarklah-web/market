@@ -104,7 +104,8 @@
 
 <script>
 // ----------------- PASSWORD -----------------
-const ADMIN_PASSWORD = "admin123"; // Change your password here
+const ADMIN_PASSWORD = "Oubrou12345"; // set your admin password here
+let adminUnlocked = false; // tracks if password was entered
 
 // ----------------- LOCAL STORAGE -----------------
 let products = JSON.parse(localStorage.getItem('products')) || [];
@@ -240,15 +241,19 @@ function confirmOrder(){
 
 // ----------------- ADMIN PASSWORD -----------------
 function showAdmin(){
-  const pass = prompt("Oubrou12345");
-  if(pass === ADMIN_PASSWORD){
-    shopPage.classList.add('hidden');
-    checkoutPage.classList.add('hidden');
-    adminPage.classList.remove('hidden');
-    renderAdmin();
-  } else {
-    alert("❌ Wrong password!");
+  if(!adminUnlocked){
+    const pass = prompt("Enter admin password:");
+    if(pass === ADMIN_PASSWORD){
+      adminUnlocked = true;
+    } else {
+      alert("❌ Wrong password!");
+      return;
+    }
   }
+  shopPage.classList.add('hidden');
+  checkoutPage.classList.add('hidden');
+  adminPage.classList.remove('hidden');
+  renderAdmin();
 }
 
 function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
