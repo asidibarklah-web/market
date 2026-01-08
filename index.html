@@ -234,37 +234,8 @@ function initFloatingEffect(){
 renderProducts();
 initFloatingEffect();
 </script>
-// When saving products
-function saveProduct(){
-  const i = editIndex.value;
-  const data = {
-    name:pName.value,
-    price:+pPrice.value,
-    stock:+pStock.value,
-    capacity:+pCapacity.value,
-    production:pProduction.value,
-    expiration:pExpiration.value,
-    image:pImage.value
-  };
-  if(i==='') products.push(data); else products[i]=data;
-
-  // Save to localStorage
-  localStorage.setItem('products', JSON.stringify(products));
-
-  editIndex.value=''; 
-  pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
-  renderProducts(); renderAdmin();
-}
-
-// Load products on page load
-window.onload = function(){
-  if(localStorage.getItem('products')){
-    products = JSON.parse(localStorage.getItem('products'));
-  }
-  renderProducts();
-  renderAdmin();
-}
 
 </body>
 </html>
+
 
