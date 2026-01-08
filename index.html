@@ -131,21 +131,15 @@
 
   let products = [];
   let cart = [];
-
   const ADMIN_PASSWORD = "Oubrou12345";
   let adminUnlocked = false;
 
-  // ===================== FUNCTIONS =====================
-
-  // Load products from Firebase
+  // Load products
   async function loadProducts() {
     products = [];
     const snapshot = await getDocs(productsCollection);
     snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-    renderProducts();
-    renderAdmin();
-    updateCartCount();
-    initFloatingEffect();
+    renderProducts(); renderAdmin(); updateCartCount(); initFloatingEffect();
   }
 
   function renderProducts() {
@@ -192,60 +186,43 @@
   async function saveProduct() {
     const i = editIndex.value;
     const data = {
-      name: pName.value,
-      price: +pPrice.value,
-      stock: +pStock.value,
-      capacity: +pCapacity.value,
-      production: pProduction.value,
-      expiration: pExpiration.value,
-      image: pImage.value
+      name: pName.value, price:+pPrice.value, stock:+pStock.value,
+      capacity:+pCapacity.value, production:pProduction.value,
+      expiration:pExpiration.value, image:pImage.value
     };
-
-    if(i === '') {
-      const docRef = await addDoc(productsCollection, data);
-      products.push({ id: docRef.id, ...data });
-    } else {
-      const docRef = doc(db, "products", products[i].id);
-      await updateDoc(docRef, data);
-      products[i] = { id: products[i].id, ...data };
-    }
-
-    editIndex.value = '';
-    pName.value = pPrice.value = pStock.value = pCapacity.value = pProduction.value = pExpiration.value = pImage.value = '';
+    if(i===''){ const docRef=await addDoc(productsCollection,data); products.push({id:docRef.id,...data}); }
+    else{ const docRef=doc(db,"products",products[i].id); await updateDoc(docRef,data); products[i]={id:products[i].id,...data}; }
+    editIndex.value=''; pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
     renderProducts(); renderAdmin();
   }
 
-  function editProduct(i) {
-    const p = products[i];
-    pName.value = p.name; pPrice.value = p.price; pStock.value = p.stock; pCapacity.value = p.capacity;
-    pProduction.value = p.production; pExpiration.value = p.expiration; pImage.value = p.image;
-    editIndex.value = i;
+  function editProduct(i){
+    const p=products[i];
+    pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity;
+    pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image;
+    editIndex.value=i;
   }
 
   async function deleteProduct(i){
-    const docRef = doc(db, "products", products[i].id);
+    const docRef=doc(db,"products",products[i].id);
     await deleteDoc(docRef);
     products.splice(i,1);
     renderProducts(); renderAdmin();
   }
 
   function addToCart(i){
-    if(products[i].stock <= 0){ alert("Out of stock!"); return; }
-    const c = cart.find(x => x.i===i);
-    if(c) c.q++; else cart.push({i,q:1});
+    if(products[i].stock<=0){alert("Out of stock!"); return;}
+    const c=cart.find(x=>x.i===i);
+    if(c)c.q++; else cart.push({i,q:1});
     products[i].stock--;
-    updateCartCount();
-    renderCart(); renderProducts(); renderAdmin();
+    updateCartCount(); renderCart(); renderProducts(); renderAdmin();
   }
 
   function renderCart(){
-    cartItems.innerHTML = '';
-    let total = 0;
-    cart.forEach(c => {
-      const p = products[c.i];
-      const l = p.price*c.q;
-      total += l;
-      cartItems.innerHTML += `
+    cartItems.innerHTML=''; let total=0;
+    cart.forEach(c=>{
+      const p=products[c.i]; const l=p.price*c.q; total+=l;
+      cartItems.innerHTML+=`
       <div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition">
         <img src="${p.image}" class="w-16 h-16 object-cover rounded-lg">
         <div class="flex-1">
@@ -255,44 +232,24 @@
         <div class="font-semibold">${l} DH</div>
       </div>`;
     });
-    cartTotal.innerText = total+' DH';
+    cartTotal.innerText=total+' DH';
   }
 
-  function updateCartCount(){
-    cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-  }
-
+  function updateCartCount(){cartCount.innerText=cart.reduce((a,b)=>a+b.q,0);}
   function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart();}
   function closeCart(){cartPanel.classList.add('translate-x-full');}
   function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden');}
   function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; renderProducts(); renderAdmin(); updateCartCount(); showShop();}
 
   function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
-  function loginAdmin(){
-    const input = adminPasswordInput.value;
-    if(input === ADMIN_PASSWORD){ adminUnlocked = true; loginPage.classList.add('hidden'); loginError.classList.add('hidden'); adminPasswordInput.value=''; openAdminPage();}
-    else loginError.classList.remove('hidden');
-  }
-  function openAdminPage(){ shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin();}
-  function logoutAdmin(){ adminUnlocked=false; showShop();}
-  function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden');}
+  function loginAdmin(){ const input=adminPasswordInput.value; if(input===ADMIN_PASSWORD){ adminUnlocked=true; loginPage.classList.add('hidden'); loginError.classList.add('hidden'); adminPasswordInput.value=''; openAdminPage(); } else loginError.classList.remove('hidden'); }
+  function openAdminPage(){ shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin(); }
+  function logoutAdmin(){ adminUnlocked=false; showShop(); }
+  function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden'); }
 
-  function initFloatingEffect(){
-    document.querySelectorAll('.product-card').forEach(card=>{
-      card.addEventListener('mousemove',e=>{
-        const rect=card.getBoundingClientRect();
-        const x=e.clientX-(rect.left+rect.width/2);
-        const y=e.clientY-(rect.top+rect.height/2);
-        card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`;
-      });
-      card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)');
-    });
-  }
+  function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{ const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`; }); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
 
-  togglePassword.addEventListener('click', () => {
-    if(adminPasswordInput.type === "password"){ adminPasswordInput.type="text"; togglePassword.textContent="🙈"; }
-    else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; }
-  });
+  togglePassword.addEventListener('click',()=>{ if(adminPasswordInput.type==="password"){ adminPasswordInput.type="text"; togglePassword.textContent="🙈"; } else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; } });
 
   loadProducts();
 </script>
