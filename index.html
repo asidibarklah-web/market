@@ -1,26 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Digital Market</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oubrou Market</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
 </script>
 <style>
-  .product-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    transform-style: preserve-3d;
-  }
-  .product-card:hover {
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  }
+  .product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; transform-style: preserve-3d; }
+  .product-card:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
 </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
-<!-- HEADER -->
 <header class="bg-white border-b sticky top-0 z-40">
   <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-4">
@@ -46,11 +40,11 @@
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
 
-<!-- ADMIN LOGIN -->
+<!-- LOGIN -->
 <section id="loginPage" class="max-w-2xl mx-auto px-6 py-12 hidden">
   <div class="bg-white rounded-2xl shadow p-8 flex flex-col items-center">
     <h3 class="text-2xl font-bold mb-4">Admin Login</h3>
-    <input id="adminPasswordInput" type="password" placeholder="Enter admin password" class="border rounded p-2 w-full mb-3">
+    <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full mb-3">
     <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
     <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Enter</button>
   </div>
@@ -60,7 +54,7 @@
 <section id="adminPage" class="hidden max-w-7xl mx-auto px-6 py-12">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold">Admin Dashboard</h2>
-    <button onclick="showShop()" class="text-primary font-semibold hover:underline">← Back to shop</button>
+    <button onclick="logoutAdmin()" class="text-primary font-semibold hover:underline">Logout</button>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -70,8 +64,8 @@
       <input id="pPrice" type="number" placeholder="Price (DH)" class="border rounded p-2 w-full mb-2">
       <input id="pStock" type="number" placeholder="Current stock" class="border rounded p-2 w-full mb-2">
       <input id="pCapacity" type="number" placeholder="Total capacity" class="border rounded p-2 w-full mb-2">
-      <input id="pProduction" type="date" placeholder="Date of Production" class="border rounded p-2 w-full mb-2">
-      <input id="pExpiration" type="date" placeholder="Date of Expiration" class="border rounded p-2 w-full mb-3">
+      <input id="pProduction" type="date" placeholder="Production Date" class="border rounded p-2 w-full mb-2">
+      <input id="pExpiration" type="date" placeholder="Expiration Date" class="border rounded p-2 w-full mb-3">
       <input id="pImage" placeholder="Image URL" class="border rounded p-2 w-full mb-3">
       <button onclick="saveProduct()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Save Product</button>
       <input type="hidden" id="editIndex">
@@ -111,15 +105,14 @@
 </section>
 
 <script>
-// ----------------- PASSWORD -----------------
 const ADMIN_PASSWORD = "Oubrou12345";
 let adminUnlocked = false;
 
-// ----------------- LOCAL STORAGE -----------------
+// Local storage for products/cart
 let products = JSON.parse(localStorage.getItem('products')) || [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-// ----------------- SHOP -----------------
+// Render products in shop
 function renderProducts() {
   productList.innerHTML='';
   products.forEach((p,i)=>{
@@ -138,8 +131,9 @@ function renderProducts() {
   })
 }
 
-// ----------------- ADMIN -----------------
+// Render admin list
 function renderAdmin(){
+  if(!adminUnlocked) return;
   const list = document.getElementById('adminProductsList');
   list.innerHTML='';
   products.forEach((p,i)=>{
@@ -161,141 +155,45 @@ function renderAdmin(){
   });
 }
 
-// ----------------- SAVE PRODUCT -----------------
+// Save product
 function saveProduct(){
   const i = editIndex.value;
-  const data={
-    name:pName.value,
-    price:+pPrice.value,
-    stock:+pStock.value,
-    capacity:+pCapacity.value,
-    production:pProduction.value,
-    expiration:pExpiration.value,
-    image:pImage.value
-  };
+  const data={ name:pName.value, price:+pPrice.value, stock:+pStock.value, capacity:+pCapacity.value,
+    production:pProduction.value, expiration:pExpiration.value, image:pImage.value };
   if(i==='') products.push(data); else products[i]=data;
-
   localStorage.setItem('products', JSON.stringify(products));
-
-  editIndex.value=''; 
-  pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
+  editIndex.value=''; pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
   renderProducts(); renderAdmin();
 }
 
-function editProduct(i){
-  const p=products[i];
-  pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity;
-  pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image;
-  editIndex.value=i;
-}
+// Edit/Delete
+function editProduct(i){ const p=products[i]; pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity;
+  pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image; editIndex.value=i; }
+function deleteProduct(i){ products.splice(i,1); localStorage.setItem('products', JSON.stringify(products)); renderProducts(); renderAdmin(); }
 
-function deleteProduct(i){
-  products.splice(i,1);
-  localStorage.setItem('products', JSON.stringify(products));
-  renderProducts();
-  renderAdmin();
-}
-
-// ----------------- CART -----------------
-function addToCart(i){
-  if(products[i].stock <= 0){ alert("Out of stock!"); return; }
-  const c=cart.find(x=>x.i===i);
-  if(c) c.q++; else cart.push({i,q:1});
-  products[i].stock--;
-  
-  localStorage.setItem('products', JSON.stringify(products));
-  localStorage.setItem('cart', JSON.stringify(cart));
-
-  cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-  renderCart();
-  renderProducts();
-  renderAdmin();
-}
-
-function renderCart(){
-  let t=0;
-  cartItems.innerHTML='';
-  cart.forEach(c=>{
-    const p=products[c.i];
-    const l=p.price*c.q;
-    t+=l;
-    cartItems.innerHTML += `
-      <div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition">
-        <img src="${p.image}" class="w-16 h-16 object-cover rounded-lg">
-        <div class="flex-1">
-          <h4 class="font-semibold">${p.name}</h4>
-          <p class="text-sm text-gray-500">${c.q} x ${p.price} DH</p>
-        </div>
-        <div class="font-semibold">${l} DH</div>
-      </div>`;
-  });
-  cartTotal.innerText = t + ' DH';
-  localStorage.setItem('cart', JSON.stringify(cart));
-}
-
-// ----------------- NAVIGATION -----------------
-function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart()}
-function closeCart(){cartPanel.classList.add('translate-x-full')}
-function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden')}
-function confirmOrder(){
-  alert('✅ Order confirmed!');
-  cart=[];
-  localStorage.setItem('cart', JSON.stringify(cart));
-  renderProducts();
-  renderAdmin();
-  cartCount.innerText=0;
-  showShop();
-}
+// Cart
+function addToCart(i){ if(products[i].stock<=0){ alert("Out of stock!"); return; } const c=cart.find(x=>x.i===i); if(c) c.q++; else cart.push({i,q:1}); products[i].stock--; localStorage.setItem('products',JSON.stringify(products)); localStorage.setItem('cart',JSON.stringify(cart)); cartCount.innerText=cart.reduce((a,b)=>a+b.q,0); renderCart(); renderProducts(); renderAdmin(); }
+function renderCart(){let t=0;cartItems.innerHTML='';cart.forEach(c=>{const p=products[c.i];const l=p.price*c.q;t+=l;cartItems.innerHTML+=`<div class="flex items-center gap-3 border rounded-lg p-2 shadow-sm hover:shadow-md transition"><img src="${p.image}" class="w-16 h-16 object-cover rounded-lg"><div class="flex-1"><h4 class="font-semibold">${p.name}</h4><p class="text-sm text-gray-500">${c.q} x ${p.price} DH</p></div><div class="font-semibold">${l} DH</div></div>`}); cartTotal.innerText=t+' DH'; localStorage.setItem('cart',JSON.stringify(cart)); }
+function openCart(){cartPanel.classList.remove('translate-x-full'); renderCart();}
+function closeCart(){cartPanel.classList.add('translate-x-full');}
+function checkout(){closeCart(); shopPage.classList.add('hidden'); checkoutPage.classList.remove('hidden');}
+function confirmOrder(){alert('✅ Order confirmed!'); cart=[]; localStorage.setItem('cart',JSON.stringify(cart)); renderProducts(); renderAdmin(); cartCount.innerText=0; showShop();}
 
 // ----------------- LOGIN -----------------
-function showLogin(){
-  shopPage.classList.add('hidden');
-  checkoutPage.classList.add('hidden');
-  adminPage.classList.add('hidden');
-  loginPage.classList.remove('hidden');
-}
+function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
+function loginAdmin(){ const input=document.getElementById('adminPasswordInput').value;
+  if(input===ADMIN_PASSWORD){ adminUnlocked=true; loginPage.classList.add('hidden'); document.getElementById('adminPasswordInput').value=''; document.getElementById('loginError').classList.add('hidden'); openAdminPage(); } 
+  else document.getElementById('loginError').classList.remove('hidden'); }
+function openAdminPage(){ if(!adminUnlocked) return; shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.remove('hidden'); renderAdmin(); }
+function logoutAdmin(){ adminUnlocked=false; showShop(); }
+function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden');}
 
-function loginAdmin() {
-  const input = document.getElementById('adminPasswordInput').value;
-  if (input === ADMIN_PASSWORD) {
-    adminUnlocked = true;
-    loginPage.classList.add('hidden');
-    document.getElementById('adminPasswordInput').value = '';
-    document.getElementById('loginError').classList.add('hidden');
-    openAdminPage();
-  } else {
-    document.getElementById('loginError').classList.remove('hidden');
-  }
-}
+// Floating product effect
+function initFloatingEffect(){ document.querySelectorAll('.product-card').forEach(card=>{ card.addEventListener('mousemove',e=>{const rect=card.getBoundingClientRect(); const x=e.clientX-(rect.left+rect.width/2); const y=e.clientY-(rect.top+rect.height/2); card.style.transform=`rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`}); card.addEventListener('mouseleave',()=>card.style.transform='rotateY(0deg) rotateX(0deg)'); }); }
 
-function openAdminPage() {
-  shopPage.classList.add('hidden');
-  checkoutPage.classList.add('hidden');
-  adminPage.classList.remove('hidden');
-  renderAdmin();
-}
-
-function showShop(){adminPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); loginPage.classList.add('hidden'); shopPage.classList.remove('hidden')}
-
-// ----------------- FLOATING EFFECT -----------------
-function initFloatingEffect(){
-  document.querySelectorAll('.product-card').forEach(card=>{
-    card.addEventListener('mousemove', e=>{
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - (rect.left + rect.width/2);
-      const y = e.clientY - (rect.top + rect.height/2);
-      card.style.transform = `rotateY(${x*0.05}deg) rotateX(${-y*0.05}deg)`;
-    });
-    card.addEventListener('mouseleave', ()=>card.style.transform='rotateY(0deg) rotateX(0deg)');
-  });
-}
-
-// ----------------- INITIAL RENDER -----------------
-renderProducts();
-renderAdmin();
-initFloatingEffect();
-cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
-
+// Initial render
+renderProducts(); renderAdmin(); initFloatingEffect(); cartCount.innerText = cart.reduce((a,b)=>a+b.q,0);
 </script>
+
 </body>
 </html>
