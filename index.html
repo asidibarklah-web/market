@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oubrou Market</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
-</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 .product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; transform-style: preserve-3d; }
 .product-card:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
@@ -68,8 +67,8 @@ tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
       <input id="pPrice" type="number" placeholder="Price (DH)" class="border rounded p-2 w-full mb-2">
       <input id="pStock" type="number" placeholder="Current stock" class="border rounded p-2 w-full mb-2">
       <input id="pCapacity" type="number" placeholder="Total capacity" class="border rounded p-2 w-full mb-2">
-      <input id="pProduction" type="date" placeholder="Production Date" class="border rounded p-2 w-full mb-2">
-      <input id="pExpiration" type="date" placeholder="Expiration Date" class="border rounded p-2 w-full mb-3">
+      <input id="pProduction" type="date" class="border rounded p-2 w-full mb-2">
+      <input id="pExpiration" type="date" class="border rounded p-2 w-full mb-3">
       <input id="pImage" placeholder="Image URL" class="border rounded p-2 w-full mb-3">
       <button onclick="saveProduct()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Save Product</button>
       <input type="hidden" id="editIndex">
@@ -108,12 +107,7 @@ tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' }}}}
   </div>
 </section>
 
-<!-- FIREBASE -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-firestore.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-analytics.js";
-
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyABCrx6YzrWtLbHPpQL97GkGu2SCU5MdPw",
   authDomain: "oubrou-market.firebaseapp.com",
@@ -124,29 +118,34 @@ const firebaseConfig = {
   measurementId: "G-W8QJ3TYXWK"
 };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
-const productsCollection = collection(db, "products");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 let products = [];
 let cart = [];
 const ADMIN_PASSWORD = "Oubrou12345";
 let adminUnlocked = false;
 
-// DOM
+// DOM elements
 const adminPasswordInput = document.getElementById("adminPasswordInput");
 const togglePassword = document.getElementById("togglePassword");
 const loginError = document.getElementById("loginError");
 
-// FUNCTIONS
-async function loadProducts() {
+// Load products
+function loadProducts() {
   products = [];
-  const snapshot = await getDocs(productsCollection);
-  snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-  renderProducts(); renderAdmin(); updateCartCount(); initFloatingEffect();
+  db.collection("products").get().then(snapshot=>{
+    snapshot.forEach(doc=>{
+      products.push({id: doc.id, ...doc.data()});
+    });
+    renderProducts();
+    renderAdmin();
+    updateCartCount();
+    initFloatingEffect();
+  });
 }
 
+// Render Shop
 function renderProducts() {
   productList.innerHTML='';
   products.forEach((p,i)=>{
@@ -165,6 +164,7 @@ function renderProducts() {
   });
 }
 
+// Render Admin
 function renderAdmin() {
   if(!adminUnlocked) return;
   const list = document.getElementById('adminProductsList');
@@ -188,7 +188,7 @@ function renderAdmin() {
   });
 }
 
-// Admin login
+// Login
 function loginAdmin(){
   if(adminPasswordInput.value === ADMIN_PASSWORD){
     adminUnlocked=true;
@@ -197,34 +197,31 @@ function loginAdmin(){
     loginPage.classList.add('hidden');
     adminPage.classList.remove('hidden');
     renderAdmin();
-  } else {
-    loginError.classList.remove('hidden');
-  }
+  } else loginError.classList.remove('hidden');
 }
 function logoutAdmin(){ adminUnlocked=false; showShop(); }
 function showLogin(){shopPage.classList.add('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.remove('hidden');}
 function showShop(){shopPage.classList.remove('hidden'); checkoutPage.classList.add('hidden'); adminPage.classList.add('hidden'); loginPage.classList.add('hidden');}
 
-// Toggle password eye
+// Password eye
 togglePassword.addEventListener('click',()=>{
   if(adminPasswordInput.type==="password"){ adminPasswordInput.type="text"; togglePassword.textContent="🙈"; }
   else{ adminPasswordInput.type="password"; togglePassword.textContent="👁"; }
 });
 
-// Products CRUD
-async function saveProduct(){
+// CRUD functions
+function saveProduct(){
   const i=editIndex.value;
   const data={
     name:pName.value, price:+pPrice.value, stock:+pStock.value, capacity:+pCapacity.value,
     production:pProduction.value, expiration:pExpiration.value, image:pImage.value
   };
-  if(i===''){ const docRef=await addDoc(productsCollection,data); products.push({id:docRef.id,...data}); }
-  else{ const docRef=doc(db,"products",products[i].id); await updateDoc(docRef,data); products[i]={id:products[i].id,...data}; }
+  if(i===''){ db.collection("products").add(data).then(docRef=>{ products.push({id:docRef.id,...data}); renderProducts(); renderAdmin(); }); }
+  else{ db.collection("products").doc(products[i].id).set(data).then(()=>{ products[i]={id:products[i].id,...data}; renderProducts(); renderAdmin(); }); }
   editIndex.value=''; pName.value=pPrice.value=pStock.value=pCapacity.value=pProduction.value=pExpiration.value=pImage.value='';
-  renderProducts(); renderAdmin();
 }
 function editProduct(i){ const p=products[i]; pName.value=p.name; pPrice.value=p.price; pStock.value=p.stock; pCapacity.value=p.capacity; pProduction.value=p.production; pExpiration.value=p.expiration; pImage.value=p.image; editIndex.value=i; }
-async function deleteProduct(i){ const docRef=doc(db,"products",products[i].id); await deleteDoc(docRef); products.splice(i,1); renderProducts(); renderAdmin(); }
+function deleteProduct(i){ db.collection("products").doc(products[i].id).delete().then(()=>{ products.splice(i,1); renderProducts(); renderAdmin(); }); }
 
 // Cart
 function addToCart(i){ if(products[i].stock<=0){alert("Out of stock"); return;} const c=cart.find(x=>x.i===i); if(c)c.q++; else cart.push({i,q:1}); products[i].stock--; updateCartCount(); renderCart(); renderProducts(); renderAdmin(); }
