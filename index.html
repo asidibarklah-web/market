@@ -16,10 +16,6 @@
     .product-card:hover {
       box-shadow: 0 20px 40px rgba(0,0,0,0.2);
     }
-    /* LOGIN MODAL */
-    #loginModal {
-      display: none;
-    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
@@ -50,6 +46,16 @@
   <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 </section>
 
+<!-- LOGIN PAGE -->
+<section id="loginPage" class="max-w-2xl mx-auto px-6 py-12 hidden">
+  <div class="bg-white rounded-2xl shadow p-8 flex flex-col items-center">
+    <h3 class="text-2xl font-bold mb-4">Admin Login</h3>
+    <input id="adminPasswordInput" type="password" placeholder="Enter admin password" class="border rounded p-2 w-full mb-3">
+    <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
+    <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Enter</button>
+  </div>
+</section>
+
 <!-- ADMIN -->
 <section id="adminPage" class="hidden max-w-7xl mx-auto px-6 py-12">
   <div class="flex justify-between items-center mb-6">
@@ -58,7 +64,6 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <!-- Add/Edit Product Card -->
     <div class="bg-white rounded-2xl shadow p-6">
       <h3 class="font-semibold text-lg mb-4">Add / Edit Product</h3>
       <input id="pName" placeholder="Name" class="border rounded p-2 w-full mb-2">
@@ -73,7 +78,6 @@
     </div>
   </div>
 
-  <!-- Product List -->
   <div class="bg-white rounded-2xl shadow p-6">
     <h3 class="text-lg font-semibold mb-4">Product List</h3>
     <div id="adminProductsList" class="space-y-4"></div>
@@ -106,19 +110,9 @@
   </div>
 </section>
 
-<!-- ADMIN LOGIN MODAL -->
-<div id="loginModal" class="fixed inset-0 bg-black/50 hidden justify-center items-center z-50">
-  <div class="bg-white p-8 rounded-2xl shadow-lg w-96">
-    <h3 class="text-xl font-bold mb-4">Admin Login</h3>
-    <input id="adminPasswordInput" type="password" placeholder="Enter password" class="border rounded p-2 w-full mb-3">
-    <p id="loginError" class="text-red-600 mb-3 hidden">Wrong password!</p>
-    <button onclick="loginAdmin()" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-indigo-600 transition">Login</button>
-  </div>
-</div>
-
 <script>
-// ----------------- PASSWORD -----------------
-let ADMIN_PASSWORD = "Oubrou12345"; 
+// ----------------- ADMIN PASSWORD -----------------
+let ADMIN_PASSWORD = "admin123"; // change here
 let adminUnlocked = false;
 
 // ----------------- LOCAL STORAGE -----------------
@@ -253,12 +247,12 @@ function confirmOrder(){
   showShop();
 }
 
-// ----------------- LOGIN MODAL -----------------
+// ----------------- LOGIN -----------------
 function loginAdmin() {
   const input = document.getElementById('adminPasswordInput').value;
   if (input === ADMIN_PASSWORD) {
     adminUnlocked = true;
-    document.getElementById('loginModal').classList.add('hidden');
+    loginPage.classList.add('hidden');
     document.getElementById('adminPasswordInput').value = '';
     document.getElementById('loginError').classList.add('hidden');
     openAdminPage();
