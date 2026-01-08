@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oubrou Market</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+.product { transition: all 0.3s ease; cursor: pointer; }
+.product:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 12px 30px rgba(0,0,0,0.2); }
+</style>
+</head>
+<body class="bg-gray-100">
+
+<!-- HEADER -->
+<header class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-50">
+  <h1 class="text-xl font-bold">🛒 Oubrou Market</h1>
+  <div class="flex gap-2">
+    <button onclick="openCart()" class="bg-indigo-600 text-white px-4 py-2 rounded">Cart (<span id="cartCount">0</span>)</button>
+    <button onclick="openAdminLogin()" class="border px-4 py-2 rounded">Admin</button>
+  </div>
+</header>
+
+<!-- SHOP -->
+<section id="shop" class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+
+<!-- CART PANEL -->
+<div id="cartBox" class="fixed top-0 right-0 w-96 h-full bg-white shadow-xl p-4 hidden z-50 flex flex-col">
+  <h2 class="text-lg font-bold mb-4">Your Cart</h2>
+  <div id="cartItems" class="flex-1 overflow-y-auto space-y-2"></div>
+  <p class="font-bold mt-4">Total: <span id="cartTotal">0</span> DH</p>
+  <button onclick="openCheckout()" class="mt-4 w-full bg-green-600 text-white py-2 rounded">Checkout</button>
+  <button onclick="closeCart()" class="mt-2 w-full bg-red-500 text-white py-2 rounded">Close</button>
+</div>
+
+<!-- CHECKOUT PANEL -->
+<div id="checkoutBox" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded w-96 max-h-[90vh] overflow-auto">
+    <h2 class="text-xl font-bold mb-4">Checkout</h2>
+
+    <div id="checkoutItems" class="space-y-2 mb-4"></div>
+
+    <p class="font-bold">Total: <span id="checkoutTotal">0</span> DH</p>
+
+    <input id="customerName" type="text" placeholder="Full Name" class="border p-2 w-full rounded mt-2">
+    <input id="customerPhone" type="text" placeholder="Phone" class="border p-2 w-full rounded mt-2">
+    <input id="customerAddress" type="text" placeholder="Address" class="border p-2 w-full rounded mt-2">
+
+    <button onclick="confirmOrder()" class="mt-4 w-full bg-green-600 text-white py-2 rounded">Confirm Order</button>
+    <button onclick="closeCheckout()" class="mt-2 w-full bg-red-500 text-white py-2 rounded">Cancel</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded w-80">
+    <h2 class="font-bold mb-3">Admin Login</h2>
+    <div class="relative">
+      <input id="adminPassword" type="password" class="border w-full p-2 rounded" placeholder="Password">
+      <button onclick="togglePassword()" class="absolute right-2 top-2">👁</button>
+    </div>
+    <button onclick="loginAdmin()" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded">Login</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="fixed inset-0 bg-white hidden p-6 overflow-auto z-50">
+  <button onclick="closeAdmin()" class="text-red-500 mb-4">← Exit</button>
+  <h2 class="text-xl font-bold mb-4">Admin Panel</h2>
+
+  <!-- Add/Edit Product -->
+  <div class="max-w-md space-y-2 mb-6">
+    <input id="pName" class="border p-2 w-full rounded" placeholder="Product Name">
+    <input id="pPrice" type="number" class="border p-2 w-full rounded" placeholder="Price">
+    <input id="pTotal" type="number" class="border p-2 w-full rounded" placeholder="Total Capacity">
+    <input id="pCurrent" type="number" class="border p-2 w-full rounded" placeholder="Current Capacity">
+    <input id="pImage" class="border p-2 w-full rounded" placeholder="Image URL">
+    <input id="pProdDate" type="date" class="border p-2 w-full rounded" placeholder="Production Date">
+    <input id="pExpDate" type="date" class="border p-2 w-full rounded" placeholder="Expiration Date">
+    <button onclick="addProduct()" class="bg-green-600 text-white py-2 w-full rounded">Add Product</button>
+  </div>
+
+  <!-- Product List -->
+  <h3 class="font-bold mb-2">Products</h3>
+  <div id="adminList" class="space-y-2"></div>
+</div>
+
+<script>
+// ================= SUPABASE =================
+const supabase = window.supabase.createClient(
+  "https://qzozwhxbzmldevbwdpep.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6b3p3aHhiem1sZGV2YndkcGVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4OTM5MzgsImV4cCI6MjA4MzQ2OTkzOH0.3ze6Wi1soRWTjLMiZBdG9gNUtX0_LORzlwmJctntJyQ"
+);
+
+// ================= DATA =================
+let products = [];
+let cart = [];
+
+// ================= LOAD PRODUCTS =================
+async function loadProducts() {
+  const { data, error } = await supabase.from("products").select("*").order("id");
+  if (error) { alert(error.message); return; }
+  products = data;
+  renderShop();
+  renderAdmin();
+}
+
+// ================= RENDER SHOP =================
+function renderShop() {
+  shop.innerHTML = "";
+  products.forEach((p, i) => {
+    shop.innerHTML += `
+      <div class="product bg-white p-4 rounded">
+        <img src="${p.image}" class="h-40 w-full object-cover rounded">
+        <h3 class="font-bold mt-2">${p.name}</h3>
+        <p>${p.price} DH</p>
+        <p>Stock: ${p.current_capacity} / ${p.total_capacity}</p>
+        <p>Prod: ${p.production_date || "-"} | Exp: ${p.expiration_date || "-"}</p>
+        <button onclick="addToCart(${i})" class="mt-2 w-full bg-indigo-600 text-white py-2 rounded">Add to cart</button>
+      </div>
+    `;
+  });
+}
+
+// ================= RENDER ADMIN =================
+function renderAdmin() {
+  adminList.innerHTML = "";
+  products.forEach(p => {
+    adminList.innerHTML += `
+      <div class="flex justify-between border-b py-2">
+        <div>
+          ${p.name} | ${p.price} DH | ${p.current_capacity}/${p.total_capacity} | Prod: ${p.production_date || "-"} | Exp: ${p.expiration_date || "-"}
+        </div>
+        <div>
+          <button onclick="deleteProduct(${p.id})" class="text-red-500">Delete</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// ================= CART =================
+function addToCart(i) {
+  const prod = products[i];
+  if(prod.current_capacity <= 0) { alert("Out of stock!"); return; }
+  cart.push(prod);
+  prod.current_capacity--;
+  cartCount.innerText = cart.length;
+  renderCart();
+  renderShop();
+}
+
+function renderCart() {
+  cartItems.innerHTML = "";
+  let total = 0;
+  cart.forEach(p => {
+    total += p.price;
+    cartItems.innerHTML += `
+      <div class="flex gap-2 items-center">
+        <img src="${p.image}" class="h-12 w-12 object-cover rounded">
+        <span>${p.name}</span>
+        <span>${p.price} DH</span>
+      </div>`;
+  });
+  cartTotal.innerText = total;
+}
+
+function openCart() { cartBox.classList.remove("hidden"); }
+function closeCart() { cartBox.classList.add("hidden"); }
+
+// ================= CHECKOUT =================
+function openCheckout() {
+  if(cart.length === 0) { alert("Cart is empty"); return; }
+  checkoutBox.classList.remove("hidden");
+  checkoutItems.innerHTML = "";
+  let total = 0;
+  cart.forEach(p => {
+    total += p.price;
+    checkoutItems.innerHTML += `
+      <div class="flex gap-2 items-center">
+        <img src="${p.image}" class="h-12 w-12 object-cover rounded">
+        <span>${p.name}</span>
+        <span>${p.price} DH</span>
+      </div>`;
+  });
+  checkoutTotal.innerText = total;
+}
+
+function closeCheckout() { checkoutBox.classList.add("hidden"); }
+
+async function confirmOrder() {
+  const name = customerName.value;
+  const phone = customerPhone.value;
+  const address = customerAddress.value;
+  if(!name || !phone || !address) { alert("Please fill all fields"); return; }
+
+  const items = cart.map(p => ({id: p.id, name: p.name, price: p.price}));
+  const total = cart.reduce((a,b) => a + b.price, 0);
+
+  const { error } = await supabase.from("orders").insert([{
+    customer_name: name,
+    phone,
+    address,
+    items,
+    total
+  }]);
+
+  if(error) { alert(error.message); return; }
+
+  cart = [];
+  cartCount.innerText = 0;
+  renderCart();
+  closeCheckout();
+
+  customerName.value = customerPhone.value = customerAddress.value = "";
+  alert("Order confirmed! Thank you.");
+}
+
+// ================= ADMIN LOGIN =================
+function openAdminLogin() { adminLogin.classList.remove("hidden"); }
+function togglePassword() { adminPassword.type = adminPassword.type === "password" ? "text" : "password"; }
+function loginAdmin() {
+  if(adminPassword.value === "Oubrou12345") {
+    adminLogin.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+  } else alert("Wrong password");
+}
+function closeAdmin() { adminPanel.classList.add("hidden"); }
+
+// ================= ADMIN ACTIONS =================
+async function addProduct() {
+  const { error } = await supabase.from("products").insert([{
+    name: pName.value,
+    price: Number(pPrice.value),
+    total_capacity: Number(pTotal.value),
+    current_capacity: Number(pCurrent.value),
+    image: pImage.value || "https://via.placeholder.com/300",
+    production_date: pProdDate.value || null,
+    expiration_date: pExpDate.value || null
+  }]);
+  if(error) { alert(error.message); return; }
+
+  pName.value = pPrice.value = pTotal.value = pCurrent.value = pImage.value = pProdDate.value = pExpDate.value = "";
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  await supabase.from("products").delete().eq("id", id);
+  loadProducts();
+}
+
+// ================= INIT =================
+loadProducts();
+</script>
+</body>
+</html>
